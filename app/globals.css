@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-purple: #2e2038;
+  --brand-cream: #faf5f0;
+  --font-head: var(--font-instrument-serif), Georgia, serif;
+  --font-body: var(--font-nunito-sans), 'Helvetica Neue', sans-serif;
+}
+
+body {
+  background-color: var(--brand-cream);
+  color: var(--brand-purple);
+}
