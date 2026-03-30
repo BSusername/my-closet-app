@@ -139,7 +139,9 @@ const WMO_EMOJI = (c: number): string => c<=1?"☀️":c<=3?"⛅":c<=48?"🌫️
 const tempToSeason = (f: number): string => f>=80?"Summer":f>=65?"Spring":f>=45?"Fall":"Winter";
 
 const BLANK_ITEM: NewItem = {name:"",category:"Top",color:"Black",style:"Casual",seasons:[...SEASONS],img:null,vibe_tags:[],occasion_tags:[]};
-const SCREEN_TITLES: Record<string, string> = {home:"My Closet",today:"What's Today?",outfits:"Your Looks",favorites:"Saved",history:"History"};
+const SCREEN_TITLES: Record<string, string> = {home:"My Closet",closet:"My Closet",today:"What's Today?",outfits:"Your Looks",favorites:"Saved",history:"History"};
+const DANCE_MSGS = ["As if! 💅","Whatever! 🙄","Totally buggin'! ✨","So fetch! 💛","Ugh, as if! 👛","I'm like, obsessed! 💕","Sweet as, bro! 🤙","Choice! 🌟","Hard out! 💛","Mean as! 😍","Chur, chur! ✨","Ka pai! 🌺","Mint! 💚","That's so skux! 💁‍♀️"];
+const SELFIE_MSGS = ["Sooo fetch! 📸","Totally cute! 💖","Major! 📷","I am so sure! 🌟","Like, hello! 📸","Sweet as! 📸","Choice look! 💛","Chur, looking mint! ✨","Ka pai! 🌺","Hard out cute! 💕"];
 
 // ─── Storage (localStorage) ───────────────────────────────────────────
 async function sGet<T>(k: string): Promise<T | null> {
@@ -395,7 +397,7 @@ function OutfitCard({ outfit, index, isFav, onToggleFav, onShare, onReact, onRat
 export default function ClosetApp() {
   // ── Core state ──
   const [appPhase, setAppPhase] = useState<"loading" | "profiles" | "onboarding" | "app">("loading");
-  const [screen, setScreen] = useState<"home" | "today" | "outfits" | "favorites" | "history">("home");
+  const [screen, setScreen] = useState<"home" | "closet" | "today" | "outfits" | "favorites" | "history">("home");
 
   // ── Profile state ──
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -430,6 +432,11 @@ export default function ClosetApp() {
 
   // ── Batch import state ──
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
+
+  // ── Character animation state ──
+  const [charAnim, setCharAnim] = useState<"idle" | "dance" | "selfie">("idle");
+  const [charMsg, setCharMsg] = useState<string | null>(null);
+  const [showFlash, setShowFlash] = useState(false);
 
   const profile = profiles.find(p => p.id === currentId);
 
@@ -546,6 +553,59 @@ export default function ClosetApp() {
   };
   const resetNew = () => setNewItem({ ...BLANK_ITEM, seasons: [...SEASONS] });
   const removeItem = (id: string) => setCloset(p => p.filter(i => i.id !== id));
+
+  // ── Character interactions ──
+  const handleCharTap = () => {
+    if (charAnim !== "idle") return;
+    setCharAnim("dance");
+    setCharMsg(DANCE_MSGS[Math.floor(Math.random() * DANCE_MSGS.length)]);
+  };
+  const handleSelfieTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (charAnim !== "idle") return;
+    setCharAnim("selfie");
+    setShowFlash(true);
+    setCharMsg(SELFIE_MSGS[Math.floor(Math.random() * SELFIE_MSGS.length)]);
+    setTimeout(() => { setCharAnim("idle"); setCharMsg(null); }, 2200);
+  };
+  const handleCharDanceEnd = () => {
+    setCharAnim("idle");
+    setTimeout(() => setCharMsg(null), 700);
+  };
+
+  // ── Export / Import ──
+  const exportData = () => {
+    const data: Record<string, unknown> = {};
+    ["closet-profiles","closet-current-id"].forEach(k => {
+      const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v);
+    });
+    profiles.forEach(p => {
+      ["items","favs","hist","fb"].forEach(type => {
+        const k = `closet-${type}-${p.id}`;
+        const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v);
+      });
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `my-closet-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const importData = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
+        Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+        window.location.reload();
+      } catch { alert("Invalid backup file. Please try again."); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }, []);
 
   // ── Batch import ──
   const handleBatchImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -670,6 +730,11 @@ export default function ClosetApp() {
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes sparkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.15)}}
+        @keyframes charDance{0%{transform:rotate(0)scale(1)}12%{transform:rotate(-12deg)scale(1.08)}25%{transform:rotate(12deg)scale(1.08)}37%{transform:rotate(-9deg)scale(1.05)}50%{transform:rotate(9deg)scale(1.05)}62%{transform:rotate(-5deg)scale(1.02)}75%{transform:rotate(5deg)scale(1.02)}87%{transform:rotate(-2deg)scale(1.01)}100%{transform:rotate(0)scale(1)}}
+        @keyframes flash{0%{opacity:0}18%{opacity:0.95}100%{opacity:0}}
+        @keyframes popUp{0%{opacity:0;transform:translateX(-50%)translateY(12px)scale(0.85)}25%{opacity:1;transform:translateX(-50%)translateY(0)scale(1)}75%{opacity:1;transform:translateX(-50%)translateY(0)scale(1)}100%{opacity:0;transform:translateX(-50%)translateY(-10px)scale(0.9)}}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         input,select{font-family:var(--font-body)}::-webkit-scrollbar{display:none}
       `}</style>
@@ -766,8 +831,8 @@ export default function ClosetApp() {
 
       {/* ═══ MAIN APP ═══ */}
       {appPhase === "app" && <>
-        {/* Header */}
-        <div style={{ padding: "16px 20px 8px", position: "sticky", top: 0, zIndex: 20,
+        {/* Header — hidden on Clueless home screen */}
+        {screen !== "home" && <div style={{ padding: "16px 20px 8px", position: "sticky", top: 0, zIndex: 20,
           background: "linear-gradient(180deg,rgba(250,245,240,0.97) 60%,rgba(250,245,240,0) 100%)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -782,14 +847,14 @@ export default function ClosetApp() {
                 <p style={{ fontSize: 11, color: "#a89ab2", margin: "2px 0 0", fontWeight: 600 }}>{profile?.name || ""} · {closet.length} pieces</p>
               </div>
             </div>
-            {screen !== "home" && screen !== "today" && <button onClick={() => setScreen("home")} style={{
+            {screen !== "today" && screen !== "closet" && <button onClick={() => setScreen("home")} style={{
               background: "rgba(46,32,56,0.07)", border: "none", borderRadius: 12, padding: "8px 14px",
               fontSize: 13, fontWeight: 700, color: "#2e2038", cursor: "pointer", fontFamily: "var(--font-body)" }}>← Back</button>}
           </div>
-        </div>
+        </div>}
 
-        {/* ── HOME ── */}
-        {screen === "home" && (
+        {/* ── CLOSET ── */}
+        {screen === "closet" && (
           <div style={{ padding: "6px 20px 110px", animation: "fadeIn 0.3s ease" }}>
             {/* Weather */}
             {weatherLoading
@@ -865,6 +930,21 @@ export default function ClosetApp() {
               </label>
               {filtered.map(item => <ItemCard key={item.id} item={item} onDelete={removeItem} />)}
             </div>
+            {/* Backup / Restore */}
+            <div style={{ display: "flex", gap: 8, marginTop: 20, marginBottom: 4, justifyContent: "center" }}>
+              <button onClick={exportData} style={{ background: "rgba(255,255,255,0.65)", border: "1.5px solid #e4dce8",
+                borderRadius: 10, padding: "8px 14px", fontSize: 10.5, fontWeight: 700, color: "#6a5c78",
+                cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 5 }}>
+                📤 Export Backup
+              </button>
+              <label style={{ background: "rgba(255,255,255,0.65)", border: "1.5px solid #e4dce8",
+                borderRadius: 10, padding: "8px 14px", fontSize: 10.5, fontWeight: 700, color: "#6a5c78",
+                cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 5 }}>
+                <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+                📥 Import Backup
+              </label>
+            </div>
+
             {closet.length === 0 && <div style={{ textAlign: "center", padding: "20px 16px", color: "#a89ab2" }}>
               <p style={{ fontSize: 36, margin: "0 0 8px" }}>👗</p>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#6a5c78" }}>Your closet is empty</p>
@@ -874,6 +954,209 @@ export default function ClosetApp() {
                 📁 <b>Batch Import</b> — select many at once
               </p>
             </div>}
+          </div>
+        )}
+
+        {/* ── CLUELESS HOME ── */}
+        {screen === "home" && (
+          <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden",
+            background: "linear-gradient(160deg,#FFF0F7 0%,#FFFDE7 45%,#F0F4FF 100%)", paddingBottom: 90 }}>
+            {/* Subtle plaid overlay */}
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none",
+              backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(245,197,24,0.07) 38px,rgba(245,197,24,0.07) 40px),repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(255,105,180,0.06) 38px,rgba(255,105,180,0.06) 40px)" }} />
+
+            {/* Profile button — top left */}
+            <div style={{ position: "absolute", top: 18, left: 20, zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => setShowProfileSwitch(true)} style={{ fontSize: 22, background: "rgba(255,255,255,0.82)",
+                border: "none", borderRadius: 12, width: 40, height: 40, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
+                {profile?.avatar || "👤"}
+              </button>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#a89ab2", fontFamily: "var(--font-body)" }}>{profile?.name || ""}</span>
+            </div>
+
+            {/* Closet shortcut — top right */}
+            <button onClick={() => setScreen("closet")} style={{ position: "absolute", top: 18, right: 20, zIndex: 10,
+              background: "rgba(255,255,255,0.82)", border: "none", borderRadius: 12, padding: "8px 13px",
+              cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#6a5c78",
+              fontFamily: "var(--font-body)", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
+              👗 {closet.length} pieces
+            </button>
+
+            {/* Top: Title + CTA */}
+            <div style={{ paddingTop: 72, paddingLeft: 24, paddingRight: 24, textAlign: "center", animation: "fadeIn 0.4s ease" }}>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 900, color: "#d4636f",
+                letterSpacing: "0.25em", textTransform: "uppercase", marginBottom: 8 }}>
+                Sweet As…. As If ✦
+              </div>
+              <h1 style={{ fontFamily: "var(--font-head)", fontSize: 38, color: "#2e2038", lineHeight: 1.15,
+                margin: "0 0 22px", fontStyle: "italic", fontWeight: 400 }}>
+                What Am I<br />Wearing Today?
+              </h1>
+              <button onClick={() => { if (closet.length >= 3) { setSelOccasion(profile?.occasions?.[0] || ""); setSelVibes(profile?.vibes?.slice(0,2) || []); setScreen("today"); } else { setScreen("closet"); } }}
+                style={{ padding: "15px 36px",
+                  background: closet.length < 3 ? "linear-gradient(135deg,#c4b6d2,#a89ab2)" : "linear-gradient(135deg,#d4636f 0%,#9a7cbf 50%,#5a9bb0 100%)",
+                  border: "none", borderRadius: 50, color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer",
+                  fontFamily: "var(--font-body)", boxShadow: closet.length < 3 ? "none" : "0 6px 28px rgba(154,124,191,0.4)",
+                  letterSpacing: "0.02em" }}>
+                {closet.length < 3 ? `✨ Add ${3 - closet.length} more item${3 - closet.length > 1 ? "s" : ""} to begin` : "✨ Let's Pick My Outfit!"}
+              </button>
+            </div>
+
+            {/* Middle: Clueless character */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", position: "relative" }}>
+              {charMsg && <div style={{ position: "absolute", top: "6%", left: "50%",
+                background: "linear-gradient(135deg,#FF69B4,#d4636f)", color: "white", borderRadius: 20,
+                padding: "9px 20px", fontSize: 13, fontWeight: 800, animation: "popUp 2.2s ease forwards",
+                zIndex: 20, pointerEvents: "none", whiteSpace: "nowrap",
+                fontFamily: "var(--font-body)", boxShadow: "0 4px 16px rgba(255,105,180,0.45)" }}>{charMsg}</div>}
+              <div onClick={handleCharTap}
+                onAnimationEnd={charAnim === "dance" ? handleCharDanceEnd : undefined}
+                style={{ animation: charAnim === "dance" ? "charDance 0.75s ease-in-out" : "float 4s ease-in-out infinite",
+                  filter: "drop-shadow(0 14px 28px rgba(212,99,111,0.18))", cursor: "pointer", userSelect: "none" }}>
+                <svg viewBox="0 0 220 360" width="200" height="320" xmlns="http://www.w3.org/2000/svg">
+                  {/* Sparkles */}
+                  <text x="14" y="52" fontSize="18" fill="#F5C518" opacity="0.8">✦</text>
+                  <text x="188" y="78" fontSize="13" fill="#FF69B4" opacity="0.7">✦</text>
+                  <text x="8" y="188" fontSize="10" fill="#9a7cbf" opacity="0.5">✦</text>
+                  <text x="200" y="215" fontSize="12" fill="#F5C518" opacity="0.6">✦</text>
+                  <text x="168" y="38" fontSize="10" fill="#FF69B4" opacity="0.5">✦</text>
+
+                  {/* Long blonde hair */}
+                  <path d="M75 95 Q58 75 62 50 Q66 16 110 14 Q154 16 158 50 Q162 75 145 95" fill="#F5C518"/>
+                  <path d="M65 95 Q45 130 47 174" stroke="#F5C518" strokeWidth="20" fill="none" strokeLinecap="round"/>
+                  <path d="M155 95 Q175 130 173 174" stroke="#F5C518" strokeWidth="20" fill="none" strokeLinecap="round"/>
+
+                  {/* Face */}
+                  <ellipse cx="110" cy="68" rx="33" ry="37" fill="#FDDBB4"/>
+
+                  {/* Eyes */}
+                  <ellipse cx="96" cy="61" rx="7" ry="8" fill="#2e2038"/>
+                  <ellipse cx="124" cy="61" rx="7" ry="8" fill="#2e2038"/>
+                  <ellipse cx="93" cy="58" rx="3" ry="3" fill="white"/>
+                  <ellipse cx="121" cy="58" rx="3" ry="3" fill="white"/>
+
+                  {/* Lashes */}
+                  <path d="M87 54 Q89 50 93 53" stroke="#2e2038" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                  <path d="M83 58 Q84 54 88 56" stroke="#2e2038" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                  <path d="M131 53 Q134 50 133 54" stroke="#2e2038" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                  <path d="M137 58 Q140 54 136 57" stroke="#2e2038" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+                  {/* Eyebrows — high arched */}
+                  <path d="M85 49 Q96 44 105 49" stroke="#C8860A" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <path d="M115 49 Q124 44 135 49" stroke="#C8860A" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+
+                  {/* Nose */}
+                  <path d="M107 76 Q110 82 113 76" stroke="#E0956A" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+                  {/* Smile */}
+                  <path d="M95 90 Q110 100 125 90" stroke="#D4636F" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+
+                  {/* Blush */}
+                  <ellipse cx="86" cy="82" rx="11" ry="7" fill="#FFB6C1" opacity="0.45"/>
+                  <ellipse cx="134" cy="82" rx="11" ry="7" fill="#FFB6C1" opacity="0.45"/>
+
+                  {/* Neck */}
+                  <rect x="100" y="100" width="20" height="22" rx="3" fill="#FDDBB4"/>
+
+                  {/* Yellow plaid blazer body */}
+                  <path d="M60 122 Q67 112 110 112 Q153 112 160 122 L164 216 Q157 222 110 222 Q63 222 56 216 Z" fill="#F5C518"/>
+
+                  {/* Blazer plaid lines */}
+                  <clipPath id="bc1"><path d="M60 122 Q67 112 110 112 Q153 112 160 122 L164 216 Q157 222 110 222 Q63 222 56 216 Z"/></clipPath>
+                  <g clipPath="url(#bc1)" opacity="0.28">
+                    <line x1="78" y1="108" x2="74" y2="226" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="98" y1="108" x2="98" y2="226" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="118" y1="108" x2="118" y2="226" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="138" y1="108" x2="142" y2="226" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="52" y1="132" x2="167" y2="132" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="51" y1="152" x2="167" y2="152" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="50" y1="172" x2="168" y2="172" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="50" y1="192" x2="168" y2="192" stroke="#5a4000" strokeWidth="2.5"/>
+                    <line x1="50" y1="212" x2="168" y2="212" stroke="#5a4000" strokeWidth="2.5"/>
+                  </g>
+
+                  {/* White shirt peek */}
+                  <path d="M96 112 L110 133 L124 112 L116 108 L110 127 L104 108 Z" fill="white"/>
+
+                  {/* Blazer lapels */}
+                  <path d="M60 122 L94 112 L110 140 L70 151 Z" fill="#E8B800" stroke="#C09000" strokeWidth="0.5"/>
+                  <path d="M160 122 L126 112 L110 140 L150 151 Z" fill="#E8B800" stroke="#C09000" strokeWidth="0.5"/>
+
+                  {/* Arms */}
+                  <path d="M60 122 Q38 150 33 190" stroke="#F5C518" strokeWidth="24" fill="none" strokeLinecap="round"/>
+                  <path d="M160 122 Q182 150 187 190" stroke="#F5C518" strokeWidth="24" fill="none" strokeLinecap="round"/>
+
+                  {/* Left hand + pink mini purse */}
+                  <ellipse cx="33" cy="196" rx="13" ry="11" fill="#FDDBB4"/>
+                  <rect x="9" y="204" width="28" height="20" rx="6" fill="#FF69B4"/>
+                  <path d="M14 204 Q14 195 23 195 Q32 195 32 204" stroke="#FF1493" strokeWidth="3" fill="none"/>
+                  <circle cx="23" cy="214" r="3.5" fill="#F5C518"/>
+
+                  {/* Right hand + phone selfie */}
+                  <ellipse cx="187" cy="196" rx="13" ry="11" fill="#FDDBB4"/>
+                  <rect x="178" y="168" width="18" height="30" rx="4" fill="#2e2038"/>
+                  <rect x="180" y="171" width="14" height="22" rx="2" fill={charAnim === "selfie" ? "white" : "#7ec8e3"}/>
+                  <circle cx="187" cy="196" r="2" fill="#999"/>
+                  <text x="183" y="183" fontSize="8" fill={charAnim === "selfie" ? "#333" : "white"} opacity="0.9">📸</text>
+                  {/* Invisible tap zone — phone selfie */}
+                  <rect x="168" y="158" width="40" height="54" fill="transparent" style={{ cursor: "pointer" }} onClick={handleSelfieTap}/>
+
+                  {/* Pink plaid mini skirt */}
+                  <path d="M65 220 Q74 224 110 224 Q146 224 155 220 L158 274 Q149 280 110 280 Q71 280 62 274 Z" fill="#FFB6C1"/>
+                  <clipPath id="sc1"><path d="M65 220 Q74 224 110 224 Q146 224 155 220 L158 274 Q149 280 110 280 Q71 280 62 274 Z"/></clipPath>
+                  <g clipPath="url(#sc1)" opacity="0.4">
+                    <line x1="83" y1="218" x2="81" y2="280" stroke="#FF69B4" strokeWidth="2"/>
+                    <line x1="110" y1="218" x2="110" y2="280" stroke="#FF69B4" strokeWidth="2"/>
+                    <line x1="137" y1="218" x2="139" y2="280" stroke="#FF69B4" strokeWidth="2"/>
+                    <line x1="61" y1="241" x2="160" y2="241" stroke="#FF69B4" strokeWidth="2"/>
+                    <line x1="60" y1="261" x2="161" y2="261" stroke="#FF69B4" strokeWidth="2"/>
+                  </g>
+
+                  {/* Legs */}
+                  <rect x="84" y="278" width="20" height="54" rx="6" fill="#FDDBB4"/>
+                  <rect x="116" y="278" width="20" height="54" rx="6" fill="#FDDBB4"/>
+
+                  {/* White knee socks */}
+                  <rect x="84" y="306" width="20" height="26" rx="6" fill="#FFF0F5"/>
+                  <rect x="116" y="306" width="20" height="26" rx="6" fill="#FFF0F5"/>
+
+                  {/* Platform shoes */}
+                  <rect x="80" y="328" width="28" height="8" rx="4" fill="#2e2038"/>
+                  <rect x="80" y="332" width="28" height="6" rx="2" fill="#3d2444"/>
+                  <rect x="112" y="328" width="28" height="8" rx="4" fill="#2e2038"/>
+                  <rect x="112" y="332" width="28" height="6" rx="2" fill="#3d2444"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Bottom: Weather */}
+            <div style={{ padding: "0 20px 16px", animation: "fadeIn 0.6s ease" }}>
+              {weatherLoading
+                ? <div style={{ height: 68, borderRadius: 18, background: "linear-gradient(90deg,#f0eaf4,#e8e0ef,#f0eaf4)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite" }} />
+                : weather && (
+                  <button onClick={() => { setManualTemp(String(weather.temp)); setManualCond(weather.desc); setShowWeather(true); }}
+                    style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)",
+                      border: "1.5px solid rgba(255,182,193,0.35)", borderRadius: 18, padding: "14px 18px",
+                      cursor: "pointer", display: "flex", alignItems: "center", gap: 14, width: "100%",
+                      fontFamily: "var(--font-body)", boxShadow: "0 4px 20px rgba(212,99,111,0.1)" }}>
+                    <span style={{ fontSize: 36 }}>{weather.emoji}</span>
+                    <div style={{ textAlign: "left", flex: 1 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#3d2c44" }}>{weather.temp}°F</div>
+                      <div style={{ fontSize: 11, color: "#8a7d96", fontWeight: 600 }}>{weather.desc} · {weather.season}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, color: "#b0a4bc", fontWeight: 700 }}>{weather.city || "Set ›"}</div>
+                      <div style={{ fontSize: 9, color: "#d4a0bc", fontWeight: 600, marginTop: 2 }}>tap to edit</div>
+                    </div>
+                  </button>
+                )
+              }
+            </div>
+            {/* Camera flash */}
+            {showFlash && <div style={{ position: "fixed", inset: 0, background: "white",
+              animation: "flash 0.55s ease-out forwards", zIndex: 998, pointerEvents: "none" }}
+              onAnimationEnd={() => setShowFlash(false)}/>}
           </div>
         )}
 
@@ -925,7 +1208,7 @@ export default function ClosetApp() {
             </button>
             <button onClick={() => setScreen("home")} style={{ width: "100%", padding: 12, border: "none", borderRadius: 14,
               background: "transparent", color: "#8a7d96", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)", marginTop: 8 }}>
-              ← Back to Closet
+              ← Back
             </button>
           </div>
         )}
@@ -1135,18 +1418,19 @@ export default function ClosetApp() {
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430,
           background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.05)",
           display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "6px 0 20px", zIndex: 50 }}>
-          {([{ key: "home", icon: "👗", label: "Closet" }, { key: "favorites", icon: "❤️", label: "Saved" }] as const).map(t => (
+          {([{ key: "closet", icon: "👗", label: "Closet" }, { key: "favorites", icon: "❤️", label: "Saved" }] as const).map(t => (
             <button key={t.key} onClick={() => setScreen(t.key)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 1, opacity: screen === t.key ? 1 : .4 }}>
               <span style={{ fontSize: 18 }}>{t.icon}</span>
               <span style={{ fontSize: 8, fontWeight: 800, color: "#2e2038", fontFamily: "var(--font-body)" }}>{t.label}</span>
             </button>
           ))}
-          <button onClick={() => { if (closet.length >= 3) { setSelOccasion(profile?.occasions?.[0] || ""); setSelVibes(profile?.vibes?.slice(0, 2) || []); setScreen("today"); } }}
-            disabled={closet.length < 3} style={{ background: closet.length < 3 ? "#c4b6d2" : "linear-gradient(135deg,#d4636f,#9a7cbf)",
-            border: "none", cursor: closet.length < 3 ? "default" : "pointer", borderRadius: "50%", width: 54, height: 54,
+          <button onClick={() => setScreen("home")}
+            style={{ background: "linear-gradient(135deg,#d4636f,#9a7cbf)",
+            border: "none", cursor: "pointer", borderRadius: "50%", width: 54, height: 54,
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: closet.length >= 3 ? "0 4px 20px rgba(154,124,191,0.4)" : "none", marginBottom: 8 }}>
+            boxShadow: screen === "home" ? "0 4px 24px rgba(212,99,111,0.55)" : "0 4px 20px rgba(154,124,191,0.35)",
+            marginBottom: 8, opacity: screen === "home" ? 1 : 0.88 }}>
             <span style={{ fontSize: 24 }}>✨</span>
           </button>
           {([{ key: "history", icon: "📋", label: "History" }, { key: "add", icon: "➕", label: "Add" }] as const).map(t => (
