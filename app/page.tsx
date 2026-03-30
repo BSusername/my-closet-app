@@ -140,6 +140,8 @@ const tempToSeason = (f: number): string => f>=80?"Summer":f>=65?"Spring":f>=45?
 
 const BLANK_ITEM: NewItem = {name:"",category:"Top",color:"Black",style:"Casual",seasons:[...SEASONS],img:null,vibe_tags:[],occasion_tags:[]};
 const SCREEN_TITLES: Record<string, string> = {home:"My Closet",closet:"My Closet",today:"What's Today?",outfits:"Your Looks",favorites:"Saved",history:"History"};
+const DANCE_MSGS = ["As if! 💅","Whatever! 🙄","Totally buggin'! ✨","So fetch! 💛","Ugh, as if! 👛","I'm like, obsessed! 💕"];
+const SELFIE_MSGS = ["Sooo fetch! 📸","Totally cute! 💖","Major! 📷","I am so sure! 🌟","Like, hello! 📸"];
 
 // ─── Storage (localStorage) ───────────────────────────────────────────
 async function sGet<T>(k: string): Promise<T | null> {
@@ -431,6 +433,11 @@ export default function ClosetApp() {
   // ── Batch import state ──
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
 
+  // ── Character animation state ──
+  const [charAnim, setCharAnim] = useState<"idle" | "dance" | "selfie">("idle");
+  const [charMsg, setCharMsg] = useState<string | null>(null);
+  const [showFlash, setShowFlash] = useState(false);
+
   const profile = profiles.find(p => p.id === currentId);
 
   // ── Load profiles on mount ──
@@ -546,6 +553,59 @@ export default function ClosetApp() {
   };
   const resetNew = () => setNewItem({ ...BLANK_ITEM, seasons: [...SEASONS] });
   const removeItem = (id: string) => setCloset(p => p.filter(i => i.id !== id));
+
+  // ── Character interactions ──
+  const handleCharTap = () => {
+    if (charAnim !== "idle") return;
+    setCharAnim("dance");
+    setCharMsg(DANCE_MSGS[Math.floor(Math.random() * DANCE_MSGS.length)]);
+  };
+  const handleSelfieTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (charAnim !== "idle") return;
+    setCharAnim("selfie");
+    setShowFlash(true);
+    setCharMsg(SELFIE_MSGS[Math.floor(Math.random() * SELFIE_MSGS.length)]);
+    setTimeout(() => { setCharAnim("idle"); setCharMsg(null); }, 2200);
+  };
+  const handleCharDanceEnd = () => {
+    setCharAnim("idle");
+    setTimeout(() => setCharMsg(null), 700);
+  };
+
+  // ── Export / Import ──
+  const exportData = () => {
+    const data: Record<string, unknown> = {};
+    ["closet-profiles","closet-current-id"].forEach(k => {
+      const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v);
+    });
+    profiles.forEach(p => {
+      ["items","favs","hist","fb"].forEach(type => {
+        const k = `closet-${type}-${p.id}`;
+        const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v);
+      });
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `my-closet-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const importData = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
+        Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+        window.location.reload();
+      } catch { alert("Invalid backup file. Please try again."); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }, []);
 
   // ── Batch import ──
   const handleBatchImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -672,6 +732,9 @@ export default function ClosetApp() {
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
         @keyframes sparkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.15)}}
+        @keyframes charDance{0%{transform:rotate(0)scale(1)}12%{transform:rotate(-12deg)scale(1.08)}25%{transform:rotate(12deg)scale(1.08)}37%{transform:rotate(-9deg)scale(1.05)}50%{transform:rotate(9deg)scale(1.05)}62%{transform:rotate(-5deg)scale(1.02)}75%{transform:rotate(5deg)scale(1.02)}87%{transform:rotate(-2deg)scale(1.01)}100%{transform:rotate(0)scale(1)}}
+        @keyframes flash{0%{opacity:0}18%{opacity:0.95}100%{opacity:0}}
+        @keyframes popUp{0%{opacity:0;transform:translateX(-50%)translateY(12px)scale(0.85)}25%{opacity:1;transform:translateX(-50%)translateY(0)scale(1)}75%{opacity:1;transform:translateX(-50%)translateY(0)scale(1)}100%{opacity:0;transform:translateX(-50%)translateY(-10px)scale(0.9)}}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         input,select{font-family:var(--font-body)}::-webkit-scrollbar{display:none}
       `}</style>
@@ -867,6 +930,21 @@ export default function ClosetApp() {
               </label>
               {filtered.map(item => <ItemCard key={item.id} item={item} onDelete={removeItem} />)}
             </div>
+            {/* Backup / Restore */}
+            <div style={{ display: "flex", gap: 8, marginTop: 20, marginBottom: 4, justifyContent: "center" }}>
+              <button onClick={exportData} style={{ background: "rgba(255,255,255,0.65)", border: "1.5px solid #e4dce8",
+                borderRadius: 10, padding: "8px 14px", fontSize: 10.5, fontWeight: 700, color: "#6a5c78",
+                cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 5 }}>
+                📤 Export Backup
+              </button>
+              <label style={{ background: "rgba(255,255,255,0.65)", border: "1.5px solid #e4dce8",
+                borderRadius: 10, padding: "8px 14px", fontSize: 10.5, fontWeight: 700, color: "#6a5c78",
+                cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 5 }}>
+                <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+                📥 Import Backup
+              </label>
+            </div>
+
             {closet.length === 0 && <div style={{ textAlign: "center", padding: "20px 16px", color: "#a89ab2" }}>
               <p style={{ fontSize: 36, margin: "0 0 8px" }}>👗</p>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#6a5c78" }}>Your closet is empty</p>
@@ -926,8 +1004,16 @@ export default function ClosetApp() {
             </div>
 
             {/* Middle: Clueless character */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0" }}>
-              <div style={{ animation: "float 4s ease-in-out infinite", filter: "drop-shadow(0 14px 28px rgba(212,99,111,0.18))" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", position: "relative" }}>
+              {charMsg && <div style={{ position: "absolute", top: "6%", left: "50%",
+                background: "linear-gradient(135deg,#FF69B4,#d4636f)", color: "white", borderRadius: 20,
+                padding: "9px 20px", fontSize: 13, fontWeight: 800, animation: "popUp 2.2s ease forwards",
+                zIndex: 20, pointerEvents: "none", whiteSpace: "nowrap",
+                fontFamily: "var(--font-body)", boxShadow: "0 4px 16px rgba(255,105,180,0.45)" }}>{charMsg}</div>}
+              <div onClick={handleCharTap}
+                onAnimationEnd={charAnim === "dance" ? handleCharDanceEnd : undefined}
+                style={{ animation: charAnim === "dance" ? "charDance 0.75s ease-in-out" : "float 4s ease-in-out infinite",
+                  filter: "drop-shadow(0 14px 28px rgba(212,99,111,0.18))", cursor: "pointer", userSelect: "none" }}>
                 <svg viewBox="0 0 220 360" width="200" height="320" xmlns="http://www.w3.org/2000/svg">
                   {/* Sparkles */}
                   <text x="14" y="52" fontSize="18" fill="#F5C518" opacity="0.8">✦</text>
@@ -1010,9 +1096,11 @@ export default function ClosetApp() {
                   {/* Right hand + phone selfie */}
                   <ellipse cx="187" cy="196" rx="13" ry="11" fill="#FDDBB4"/>
                   <rect x="178" y="168" width="18" height="30" rx="4" fill="#2e2038"/>
-                  <rect x="180" y="171" width="14" height="22" rx="2" fill="#7ec8e3"/>
+                  <rect x="180" y="171" width="14" height="22" rx="2" fill={charAnim === "selfie" ? "white" : "#7ec8e3"}/>
                   <circle cx="187" cy="196" r="2" fill="#999"/>
-                  <text x="183" y="183" fontSize="8" fill="white" opacity="0.9">📸</text>
+                  <text x="183" y="183" fontSize="8" fill={charAnim === "selfie" ? "#333" : "white"} opacity="0.9">📸</text>
+                  {/* Invisible tap zone — phone selfie */}
+                  <rect x="168" y="158" width="40" height="54" fill="transparent" style={{ cursor: "pointer" }} onClick={handleSelfieTap}/>
 
                   {/* Pink plaid mini skirt */}
                   <path d="M65 220 Q74 224 110 224 Q146 224 155 220 L158 274 Q149 280 110 280 Q71 280 62 274 Z" fill="#FFB6C1"/>
@@ -1065,6 +1153,10 @@ export default function ClosetApp() {
                 )
               }
             </div>
+            {/* Camera flash */}
+            {showFlash && <div style={{ position: "fixed", inset: 0, background: "white",
+              animation: "flash 0.55s ease-out forwards", zIndex: 998, pointerEvents: "none" }}
+              onAnimationEnd={() => setShowFlash(false)}/>}
           </div>
         )}
 
