@@ -140,8 +140,8 @@ const tempToSeason = (f: number): string => f>=80?"Summer":f>=65?"Spring":f>=45?
 
 const BLANK_ITEM: NewItem = {name:"",category:"Top",color:"Black",style:"Casual",seasons:[...SEASONS],img:null,vibe_tags:[],occasion_tags:[]};
 const SCREEN_TITLES: Record<string, string> = {home:"My Closet",closet:"My Closet",today:"What's Today?",outfits:"Your Looks",favorites:"Saved",history:"History"};
-const DANCE_MSGS = ["As if! 💅","Whatever! 🙄","Totally buggin'! ✨","So fetch! 💛","Ugh, as if! 👛","I'm like, obsessed! 💕"];
-const SELFIE_MSGS = ["Sooo fetch! 📸","Totally cute! 💖","Major! 📷","I am so sure! 🌟","Like, hello! 📸"];
+const DANCE_MSGS = ["As if! 💅","Whatever! 🙄","Totally buggin'! ✨","So fetch! 💛","Ugh, as if! 👛","I'm like, obsessed! 💕","Sweet as, bro! 🤙","Choice! 🌟","Hard out! 💛","Mean as! 😍","Chur, chur! ✨","Ka pai! 🌺","Mint! 💚","That's so skux! 💁‍♀️"];
+const SELFIE_MSGS = ["Sooo fetch! 📸","Totally cute! 💖","Major! 📷","I am so sure! 🌟","Like, hello! 📸","Sweet as! 📸","Choice look! 💛","Chur, looking mint! ✨","Ka pai! 🌺","Hard out cute! 💕"];
 
 // ─── Storage (localStorage) ───────────────────────────────────────────
 async function sGet<T>(k: string): Promise<T | null> {
@@ -987,7 +987,7 @@ export default function ClosetApp() {
             <div style={{ paddingTop: 72, paddingLeft: 24, paddingRight: 24, textAlign: "center", animation: "fadeIn 0.4s ease" }}>
               <div style={{ fontFamily: "var(--font-body)", fontSize: 11, fontWeight: 900, color: "#d4636f",
                 letterSpacing: "0.25em", textTransform: "uppercase", marginBottom: 8 }}>
-                ✦ As If! ✦
+                Sweet As…. As If ✦
               </div>
               <h1 style={{ fontFamily: "var(--font-head)", fontSize: 38, color: "#2e2038", lineHeight: 1.15,
                 margin: "0 0 22px", fontStyle: "italic", fontWeight: 400 }}>
