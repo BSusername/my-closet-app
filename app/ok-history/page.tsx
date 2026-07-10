@@ -9,7 +9,7 @@ const SatelliteMap = dynamic(() => import("./SatelliteMap"), { ssr: false,
     justifyContent: "center", color: "#7a6548", fontSize: 13 }}>Loading satellite map…</div> });
 
 // ─── Types ────────────────────────────────────────────────────────────
-type Category = "history" | "person" | "fun" | "pop";
+type Category = "history" | "person" | "fun" | "pop" | "sports";
 interface Question {
   id: number;
   category: Category;
@@ -23,6 +23,7 @@ interface Answer {
   qid: number;
   distance: number;
   score: number;
+  rawScore: number;
   multiplier: number;
   tapLat: number;
   tapLon: number;
@@ -46,6 +47,7 @@ const CATEGORY_META: Record<Category, { label: string; emoji: string; color: str
   person: { label: "FAMOUS OKLAHOMAN", emoji: "⭐", color: "#7a4a1a" },
   fun: { label: "FUN TRIVIA", emoji: "🎉", color: "#8a1a5c" },
   pop: { label: "POP CULTURE & MUSIC", emoji: "🎸", color: "#1a6b5c" },
+  sports: { label: "SPORTS", emoji: "🏈", color: "#8a1f1a" },
 };
 
 // ─── Question bank (100 questions) ─────────────────────────────────────
@@ -357,11 +359,163 @@ const QUESTIONS: Question[] = [
   { id: 100, category: "pop", place: "Pawnee", lat: 36.3384, lon: -96.7986,
     text: "A famous traveling Wild West show, featuring trick riders and sharpshooters, was headquartered near this town in the early 1900s, part of a national craze for frontier-themed entertainment.",
     fact: "Pawnee Bill's Wild West Show toured the country alongside contemporaries like Buffalo Bill's, blending real ranch life with theatrical spectacle." },
+
+  // ── Sports (50) ──
+  { id: 101, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's quarterback won the Heisman Trophy in 2017 before becoming the #1 overall pick of the 2018 NFL Draft by the Cleveland Browns.",
+    fact: "Baker Mayfield went on to start for several NFL teams after his standout OU career." },
+  { id: 102, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's quarterback won the 2018 Heisman Trophy, then turned down a first-round baseball contract to instead become the #1 overall pick of the 2019 NFL Draft.",
+    fact: "Kyler Murray had been drafted by the Oakland Athletics in the MLB Draft before choosing football and going #1 to the Arizona Cardinals." },
+  { id: 103, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's quarterback won the 2008 Heisman Trophy and was the #1 overall pick of the 2010 NFL Draft, by the St. Louis Rams.",
+    fact: "Sam Bradford's rookie contract set an NFL record at the time for a first-year player." },
+  { id: 104, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's quarterback won the Heisman Trophy in 2003, part of a remarkable stretch of Sooner Heisman winners in the 2000s and 2010s.",
+    fact: "Jason White won the Heisman despite playing through multiple serious knee injuries during his college career." },
+  { id: 105, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's running back won the Heisman Trophy in 1978 and went on to a Hall of Fame NFL career with the Detroit Lions.",
+    fact: "Billy Sims remains one of the most electrifying running backs in Sooners history." },
+  { id: 106, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This point guard played just one season of college basketball here before being drafted by the Dallas Mavericks in 2018 and immediately traded to the Atlanta Hawks.",
+    fact: "Trae Young became an NBA All-Star known for his deep three-point range and playmaking." },
+  { id: 107, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This sharpshooting guard was named national college basketball Player of the Year here in 2016 before being drafted by the New Orleans Pelicans.",
+    fact: "Buddy Hield became known in the NBA as one of the league's most prolific three-point shooters." },
+  { id: 108, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This basketball star played here in the 1980s before an NBA career with three teams — then reinvented himself as a successful smooth jazz bassist.",
+    fact: "Wayman Tisdale released several jazz albums after retiring from the NBA." },
+  { id: 109, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "Under longtime coach Patty Gasso, this university's softball program has become one of the most dominant dynasties in the history of college sports, racking up national championships.",
+    fact: "The OU Sooners softball team has produced multiple undefeated national championship seasons." },
+  { id: 110, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "Under longtime coach K.J. Kindler, this university's gymnastics program has captured multiple NCAA national titles.",
+    fact: "OU gymnastics is consistently ranked among the top programs in the country." },
+  { id: 111, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's running back won the Heisman Trophy in 1988 and went on to a Hall of Fame NFL career with the Detroit Lions.",
+    fact: "Barry Sanders is considered one of the most elusive running backs in football history." },
+  { id: 112, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "Wrestling at Gallagher-Iba Arena, this university's program has won more NCAA team championships than any other wrestling program in history.",
+    fact: "Oklahoma State's wrestling dynasty dates back decades and remains a national powerhouse." },
+  { id: 113, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's basketball star was picked 17th overall in the 2000 NBA Draft by the Seattle SuperSonics, and a year later became the first player in franchise history to win the Slam Dunk Contest.",
+    fact: "Desmond Mason averaged 18 points per game as a senior at Oklahoma State before his NBA career." },
+  { id: 114, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's running back went on to a Hall of Fame NFL career with the Buffalo Bills, helping lead them to four straight Super Bowl appearances.",
+    fact: "Thurman Thomas was the NFL's Most Valuable Player in 1991." },
+  { id: 115, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's baseball stadium is named for a Muscogee Creek Nation alum who pitched in multiple World Series for the New York Yankees.",
+    fact: "Allie Reynolds Stadium honors the Cowboy great, who threw two no-hitters in a single 1951 season for the Yankees." },
+  { id: 116, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's wrestling legend won Olympic gold at the 1988 Seoul Games and again at the 1992 Barcelona Games, becoming the first American wrestler in 80 years to win two Olympic golds.",
+    fact: "John Smith later became Oklahoma State's head wrestling coach, building on the program's dynasty." },
+  { id: 117, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's wide receiver was a consensus All-American before becoming a first-round NFL Draft pick.",
+    fact: "Justin Blackmon won back-to-back Biletnikoff Awards as the nation's top receiver in 2010 and 2011." },
+  { id: 118, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "In 2008, an NBA franchise relocated here from Seattle, becoming Oklahoma's first major professional sports team.",
+    fact: "The team kept most of the Seattle SuperSonics' roster but adopted the new name Oklahoma City Thunder." },
+  { id: 119, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "This city's NBA team had a forward win league MVP in 2014, one of the franchise's signature seasons.",
+    fact: "Kevin Durant averaged over 32 points per game during his 2013-14 MVP season with the Thunder." },
+  { id: 120, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "A point guard for this city's NBA team set multiple records for triple-doubles in a single season during the mid-2010s.",
+    fact: "Russell Westbrook averaged a triple-double for an entire season multiple times, a feat once thought nearly impossible." },
+  { id: 121, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "This downtown arena has been home to Oklahoma's NBA franchise since it arrived in the city, under several different sponsor names over the years.",
+    fact: "The arena is now known as Paycom Center, after previously being called the Ford Center and Chesapeake Energy Arena." },
+  { id: 122, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "In 2012, this city's NBA team made its only trip to the NBA Finals to date, falling to the Miami Heat.",
+    fact: "That Thunder roster featured a young core of Kevin Durant, Russell Westbrook, and James Harden." },
+  { id: 123, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "This city's NBA guard won both the league MVP award and the scoring title in the 2024-25 season, cementing himself as the face of the franchise.",
+    fact: "Shai Gilgeous-Alexander averaged 32.7 points per game that season for the Thunder." },
+  { id: 124, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "The USA Softball Hall of Fame Stadium in this city hosts the NCAA Women's College World Series every year, the biggest stage in college softball.",
+    fact: "Devon Park in Oklahoma City has hosted the Women's College World Series since 1990." },
+  { id: 125, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "Beyond college softball, this city's USA Softball national complex has also hosted international tournaments used to help qualify teams for the Olympic Games.",
+    fact: "Oklahoma City's softball complex is considered one of the sport's premier venues worldwide." },
+  { id: 126, category: "sports", place: "Tulsa", lat: 36.1478, lon: -95.9928,
+    text: "This university's men's basketball team, seeded 15th, stunned the nation with a run to the Sweet 16 of the 2021 NCAA Tournament, upsetting both the 2nd and 7th seeds along the way.",
+    fact: "Oral Roberts University became only the second 15-seed ever to reach the Sweet 16, led by star guard Max Abmas." },
+  { id: 127, category: "sports", place: "Tulsa", lat: 36.1478, lon: -95.9928,
+    text: "This city's NCAA Division I university, nicknamed the Golden Hurricane, has fielded competitive football and basketball programs for decades.",
+    fact: "The University of Tulsa has produced numerous NFL and NBA players over the years." },
+  { id: 128, category: "sports", place: "Edmond", lat: 35.6528, lon: -97.4781,
+    text: "This city is home to the University of Central Oklahoma Bronchos, who compete in NCAA Division II athletics.",
+    fact: "UCO fields one of the largest NCAA Division II athletic programs in the country." },
+  { id: 129, category: "sports", place: "Edmond", lat: 35.6528, lon: -97.4781,
+    text: "This city is also home to Oklahoma Christian University, whose Eagles compete in NCAA Division II.",
+    fact: "Oklahoma Christian University and UCO give Edmond two competing college athletic programs." },
+  { id: 130, category: "sports", place: "Ada", lat: 34.7746, lon: -96.6783,
+    text: "This city is home to East Central University, whose Tigers compete in NCAA Division II athletics.",
+    fact: "East Central University has been part of Ada's community since 1909." },
+  { id: 131, category: "sports", place: "Durant", lat: 33.9937, lon: -96.3708,
+    text: "This city is home to Southeastern Oklahoma State University, whose Savage Storm compete in NCAA Division II athletics.",
+    fact: "Southeastern Oklahoma State has sent several players on to professional football careers." },
+  { id: 132, category: "sports", place: "Weatherford", lat: 35.5323, lon: -98.7020,
+    text: "This city is home to Southwestern Oklahoma State University, whose Bulldogs compete in NCAA Division II athletics.",
+    fact: "SWOSU's campus has grown steadily since its founding in 1901." },
+  { id: 133, category: "sports", place: "Tahlequah", lat: 35.9151, lon: -94.9700,
+    text: "This city, the capital of the Cherokee Nation, is also home to Northeastern State University, whose RiverHawks compete in NCAA Division II.",
+    fact: "Northeastern State is one of the oldest universities in Oklahoma, tracing its roots to 1846." },
+  { id: 134, category: "sports", place: "Goodwell", lat: 36.5967, lon: -101.6415,
+    text: "Tucked in the far western Panhandle, this town is home to Oklahoma Panhandle State University, the westernmost four-year college in the state.",
+    fact: "OPSU's Aggies compete in NAIA athletics from one of the most remote college campuses in Oklahoma." },
+  { id: 135, category: "sports", place: "Langston", lat: 35.9245, lon: -97.2569,
+    text: "This town is home to Langston University, Oklahoma's only Historically Black College or University, known for a strong track and field tradition.",
+    fact: "Langston University was founded in 1897 and remains a proud HBCU athletics program today." },
+  { id: 136, category: "sports", place: "Lawton", lat: 34.6036, lon: -98.3959,
+    text: "This city is home to Cameron University, whose Aggies compete in NCAA Division II athletics.",
+    fact: "Cameron University fields a competitive wrestling program among its Division II sports." },
+  { id: 137, category: "sports", place: "Claremore", lat: 36.3126, lon: -95.6081,
+    text: "This city is home to Rogers State University, whose Hillcats compete in NAIA athletics.",
+    fact: "Rogers State's athletics program has grown significantly since the school gained four-year status in the 1990s." },
+  { id: 138, category: "sports", place: "Bartlesville", lat: 36.7473, lon: -95.9808,
+    text: "This city is home to Oklahoma Wesleyan University, whose Eagles compete in NAIA athletics.",
+    fact: "Oklahoma Wesleyan's men's basketball program has won multiple NAIA national championships." },
+  { id: 139, category: "sports", place: "Shawnee", lat: 35.3273, lon: -96.9253,
+    text: "This city is home to Oklahoma Baptist University, whose Bison compete in NCAA Division II athletics.",
+    fact: "OBU has fielded competitive teams in cross country and basketball for decades." },
+  { id: 140, category: "sports", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "This city is home to Oklahoma City University, whose Stars have historically fielded standout men's soccer and golf programs.",
+    fact: "Oklahoma City University competes in NAIA athletics and has won numerous national titles across its programs." },
+  { id: 141, category: "sports", place: "Chickasha", lat: 35.0526, lon: -97.9364,
+    text: "This city is home to the University of Science and Arts of Oklahoma, whose Drovers compete in NAIA athletics.",
+    fact: "USAO is one of the smallest public universities in the state." },
+  { id: 142, category: "sports", place: "Alva", lat: 36.8081, lon: -98.6667,
+    text: "This city is home to Northwestern Oklahoma State University, whose Rangers compete in NCAA Division II athletics.",
+    fact: "Northwestern Oklahoma State serves the far northwestern corner of the state from its Alva campus." },
+  { id: 143, category: "sports", place: "Bethany", lat: 35.5031, lon: -97.6314,
+    text: "This Oklahoma City suburb is home to Southern Nazarene University, whose Crimson Storm compete in NCAA Division II athletics.",
+    fact: "Southern Nazarene has fielded competitive programs in wrestling and track and field." },
+  { id: 144, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "The fierce, decades-long athletic rivalry between Oklahoma's two biggest universities across every sport is nicknamed after this term for chaos and mayhem.",
+    fact: "The 'Bedlam' rivalry between OU and Oklahoma State spans football, basketball, and virtually every other sport the schools share." },
+  { id: 145, category: "sports", place: "Prague", lat: 35.4756, lon: -96.6825,
+    text: "Born on the Sac and Fox reservation near this town, a legend once named 'Greatest Athlete of the First Half of the 20th Century' also helped found the organization that became the NFL.",
+    fact: "Jim Thorpe served as the first president of the American Professional Football Association, the forerunner to the modern NFL." },
+  { id: 146, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's second wrestling legend of the 1988 Seoul Olympics won gold at 163 pounds with a dramatic overtime win over a Soviet opponent.",
+    fact: "Kenny Monday later added an Olympic silver in 1992 and went on to coach alongside teammate John Smith at Oklahoma State." },
+  { id: 147, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "In 2024, this university left the Big 12 Conference after decades of membership, joining the Southeastern Conference (SEC) alongside its in-state rival.",
+    fact: "Both Oklahoma and Oklahoma State's conference realignment marked one of the biggest shakeups in modern college sports." },
+  { id: 148, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's legendary football coach won three national championships in the 1970s and 80s before later coaching the Dallas Cowboys to a Super Bowl title.",
+    fact: "Barry Switzer is one of only a few coaches to win both a college football national championship and a Super Bowl." },
+  { id: 149, category: "sports", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "This university's head football coach led the Sooners to a national championship in the 2000 season, his second year on the job.",
+    fact: "Bob Stoops became one of the winningest coaches in Oklahoma football history over his 18 seasons leading the program." },
+  { id: 150, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "This university's head football coach has held the job since 2005, becoming known nationally for an animated, viral postgame rant defending his players.",
+    fact: "Mike Gundy's 'I'm a man! I'm 40!' speech in 2007 became one of the most-replayed moments in college football media history." },
 ];
 
 const BASE_POINTS = 100;
 const ALL_MULTIPLIERS = [1, 2, 3, 4, 5];
-const DAILY_MIX_BASE: Category[] = ["history", "person", "fun", "pop"];
+const DAILY_MIX: Category[] = ["history", "person", "fun", "pop", "sports"];
 
 function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8;
@@ -402,11 +556,9 @@ function shuffled<T>(arr: T[], rand: () => number): T[] {
 }
 function questionsForDate(dateKey: string): Question[] {
   const rand = mulberry32(hashStr(dateKey));
-  const wildcard = DAILY_MIX_BASE[Math.floor(rand() * DAILY_MIX_BASE.length)];
-  const mix = [...DAILY_MIX_BASE, wildcard];
   const used = new Set<number>();
   const picks: Question[] = [];
-  for (const cat of mix) {
+  for (const cat of DAILY_MIX) {
     const pool = QUESTIONS.filter(q => q.category === cat && !used.has(q.id));
     const pick = shuffled(pool, rand)[0] || shuffled(QUESTIONS.filter(q => !used.has(q.id)), rand)[0];
     if (pick) { picks.push(pick); used.add(pick.id); }
@@ -438,12 +590,64 @@ function yesterdayKey(dateKey: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function tierEmoji(score: number, max: number): string {
-  const pct = score / max;
-  if (pct >= 0.85) return "🟩";
-  if (pct >= 0.5) return "🟨";
-  if (pct >= 0.2) return "🟧";
-  return "🟥";
+// ─── Oklahoma-slang feedback, keyed off the raw 0-100 score BEFORE the confidence multiplier ──
+interface FeedbackTier { min: number; emoji: string; label: string; lines: string[]; }
+const FEEDBACK_TIERS: FeedbackTier[] = [
+  { min: 100, emoji: "🥋", label: "CHUCK NORRIS APPROVED",
+    lines: [
+      "Well I'll be dipped in butter — that's a dead-on bullseye! Even Chuck Norris couldn't round-house kick it closer.",
+      "That's slicker than a greased pig at the county fair — a straight-up perfect hit!",
+    ] },
+  { min: 90, emoji: "🍻", label: "ATTA BOY",
+    lines: [
+      "Well slap my knee, that's slicker than owl spit! Crack a cold one, you earned it.",
+      "Now that right there is how a true Sooner — or Cowboy — does it. Cheers to you!",
+    ] },
+  { min: 75, emoji: "👌", label: "SOLID",
+    lines: [
+      "Not bad, not bad — you didn't just fall off the turnip truck.",
+      "That's a fine bit of guessin', pardner. Right in the neighborhood.",
+    ] },
+  { min: 60, emoji: "🫪", label: "CLOSE ENOUGH FOR HORSESHOES",
+    lines: [
+      "Close, but no cigar — that's about as near as a horseshoe toss.",
+      "You were in the county, at least. Gettin' warmer.",
+    ] },
+  { min: 45, emoji: "😬", label: "BLESS YOUR HEART",
+    lines: [
+      "Bless your heart, that guess wandered off like a lost calf.",
+      "Ooh, that one strayed further than a tumbleweed in a dust storm.",
+    ] },
+  { min: 30, emoji: "🫠", label: "ROUGH AS A COB",
+    lines: [
+      "Whew, that's rougher than a cob. Better luck next question.",
+      "That guess about melted right off the map, didn't it.",
+    ] },
+  { min: 15, emoji: "🥴", label: "OUT IN THE STICKS",
+    lines: [
+      "That guess is more lost than a goose in a hailstorm.",
+      "Son, you're out in the sticks on that one.",
+    ] },
+  { min: 5, emoji: "🫣", label: "WAY OFF, HOSS",
+    lines: [
+      "That's further off than Boise City is from the nearest ocean.",
+      "Yikes — did you close your eyes and just poke the map?",
+    ] },
+  { min: 1, emoji: "😢", label: "PLUMB LOST",
+    lines: [
+      "That guess done gone and got itself plumb lost out in the sticks.",
+      "Well shoot, that one's sadder than a screen door on a submarine.",
+    ] },
+  { min: 0, emoji: "💩", label: "WHOLE LOTTA NOTHIN'",
+    lines: [
+      "Well butter my biscuit, that's a whole lotta nothin'.",
+      "That guess landed about as close as Texas gettin' invited back to the Big 12.",
+    ] },
+];
+function getFeedback(rawScore: number): FeedbackTier & { line: string } {
+  const tier = FEEDBACK_TIERS.find(t => rawScore >= t.min) ?? FEEDBACK_TIERS[FEEDBACK_TIERS.length - 1];
+  const line = tier.lines[Math.floor(Math.random() * tier.lines.length)];
+  return { ...tier, line };
 }
 
 const ROUND_MAX = BASE_POINTS * ALL_MULTIPLIERS.reduce((a, b) => a + b, 0); // 1500
@@ -481,17 +685,30 @@ export default function OKHistoryGame() {
     setPendingTap({ lat, lon });
   }, []);
 
-  const lockInGuess = () => {
-    if (!pendingTap || !current || !selectedMultiplier) return;
-    const distance = haversineMiles(pendingTap.lat, pendingTap.lon, current.lat, current.lon);
-    const max = BASE_POINTS * selectedMultiplier;
-    const score = scoreFor(distance, max);
-    const answer: Answer = { qid: current.id, distance, score, multiplier: selectedMultiplier, tapLat: pendingTap.lat, tapLon: pendingTap.lon };
+  const submitGuess = useCallback((lat: number, lon: number, multiplier: number) => {
+    if (!current) return;
+    const distance = haversineMiles(lat, lon, current.lat, current.lon);
+    const rawScore = scoreFor(distance, BASE_POINTS);
+    const score = scoreFor(distance, BASE_POINTS * multiplier);
+    const answer: Answer = { qid: current.id, distance, score, rawScore, multiplier, tapLat: lat, tapLon: lon };
     setLastAnswer(answer);
     setAnswers(p => [...p, answer]);
-    setUsedMultipliers(p => [...p, selectedMultiplier]);
+    setUsedMultipliers(p => [...p, multiplier]);
     setPhase("reveal");
+  }, [current]);
+
+  const lockInGuess = () => {
+    if (!pendingTap || !selectedMultiplier) return;
+    submitGuess(pendingTap.lat, pendingTap.lon, selectedMultiplier);
   };
+
+  const handleDoubleClick = useCallback((lat: number, lon: number) => {
+    setPendingTap({ lat, lon });
+    setSelectedMultiplier(current => {
+      if (current) submitGuess(lat, lon, current);
+      return current;
+    });
+  }, [submitGuess]);
 
   const nextQuestion = () => {
     setPendingTap(null);
@@ -524,7 +741,7 @@ export default function OKHistoryGame() {
 
   const shareText = useMemo(() => {
     const total = answers.reduce((s, a) => s + a.score, 0);
-    const squares = answers.map(a => tierEmoji(a.score, BASE_POINTS * a.multiplier)).join("");
+    const squares = answers.map(a => getFeedback(a.rawScore).emoji).join("");
     return `OK History ${dateKey} — ${total}/${ROUND_MAX}\n${squares}\nhttps://geohistory.gg`;
   }, [answers, dateKey]);
 
@@ -538,6 +755,7 @@ export default function OKHistoryGame() {
 
   const catMeta = current ? CATEGORY_META[current.category] : null;
   const canLockIn = Boolean(pendingTap && selectedMultiplier);
+  const revealFeedback = useMemo(() => lastAnswer ? getFeedback(lastAnswer.rawScore) : null, [lastAnswer]);
 
   return (
     <div style={{ minHeight: "100vh", maxWidth: 560, margin: "0 auto", position: "relative",
@@ -561,12 +779,16 @@ export default function OKHistoryGame() {
       {phase === "intro" && (
         <div className="okh-fade" style={{ padding: 24, textAlign: "center" }}>
           <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5a4630" }}>
-            5 questions about Oklahoma history, famous Oklahomans, fun trivia, and pop culture &amp; music. Tap the spot on the
-            satellite map where you think the answer is — the closer you are, the more points you score.
+            5 questions covering Oklahoma history, famous Oklahomans, fun trivia, pop culture &amp; music, and sports. Tap
+            the spot on the satellite map where you think the answer is — the closer you are, the more points you score.
           </p>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: "#5a4630", marginTop: 8 }}>
-            Each question is worth <b>100 points</b>, but before you lock in a guess you also pick a <b>confidence multiplier
+            Each question is worth <b>100 points</b>, but before you submit a guess you also pick a <b>confidence multiplier
             from ×1 to ×5</b>. Each multiplier can only be used once per round — save your ×5 for the one you&apos;re sure about.
+          </p>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: "#5a4630", marginTop: 8 }}>
+            Tap the map to drop a pin, then confirm it — tap <b>Final Answer</b> or just double-tap the spot again — so a
+            stray tap while you&apos;re exploring the map never accidentally submits your guess.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "14px 0", flexWrap: "wrap" }}>
             {(Object.keys(CATEGORY_META) as Category[]).map(c => (
@@ -613,6 +835,7 @@ export default function OKHistoryGame() {
               guess={pendingTap}
               actual={phase === "reveal" ? { lat: current.lat, lon: current.lon, label: current.place } : null}
               onPick={handlePick}
+              onConfirm={handleDoubleClick}
             />
           </div>
 
@@ -640,19 +863,29 @@ export default function OKHistoryGame() {
                 <button onClick={lockInGuess} disabled={!canLockIn} style={{
                   background: canLockIn ? "#1a3a5c" : "#ccc", color: "#fff", border: "none", borderRadius: 14,
                   padding: "13px 32px", fontSize: 15, fontWeight: 800, cursor: canLockIn ? "pointer" : "default" }}>
-                  {!pendingTap ? "Tap the map to guess" : !selectedMultiplier ? "Pick a confidence multiplier" : `Lock In Guess (×${selectedMultiplier})`}
+                  {!pendingTap ? "Tap the map to guess" : !selectedMultiplier ? "Pick a confidence multiplier" : `Final Answer (×${selectedMultiplier})`}
                 </button>
+                <p style={{ fontSize: 11, color: "#9a8a68", marginTop: 8 }}>
+                  Tip: double-tap (or double-click) a spot on the map to confirm it as your final answer instantly.
+                </p>
               </div>
             </div>
           )}
 
-          {phase === "reveal" && lastAnswer && (
+          {phase === "reveal" && lastAnswer && revealFeedback && (
             <div className="okh-fade" style={{ marginTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 44, lineHeight: 1 }}>{revealFeedback.emoji}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#b5451f", letterSpacing: 0.5, marginTop: 4 }}>
+                {revealFeedback.label}
+              </div>
+              <p style={{ fontSize: 14.5, lineHeight: 1.5, color: "#3a2a18", fontWeight: 600, maxWidth: 420, margin: "6px auto 10px" }}>
+                {revealFeedback.line}
+              </p>
               <div style={{ fontSize: 26, fontWeight: 800, color: "#1a3a5c" }}>
                 +{lastAnswer.score} pts <span style={{ fontSize: 15, color: "#b5451f" }}>(×{lastAnswer.multiplier} confidence)</span>
               </div>
               <div style={{ fontSize: 13.5, color: "#7a6548", marginBottom: 6 }}>
-                {Math.round(lastAnswer.distance)} miles from {current.place}
+                {Math.round(lastAnswer.distance)} miles from {current.place} · raw accuracy {lastAnswer.rawScore}/100
               </div>
               <p style={{ fontSize: 13, color: "#5a4630", lineHeight: 1.5, maxWidth: 420, margin: "0 auto 14px" }}>💡 {current.fact}</p>
               <button onClick={nextQuestion} style={{ background: "#b5451f", color: "#fff", border: "none", borderRadius: 14,
@@ -672,7 +905,7 @@ export default function OKHistoryGame() {
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 18 }}>
             {answers.map(a => (
-              <div key={a.qid} style={{ fontSize: 26 }}>{tierEmoji(a.score, BASE_POINTS * a.multiplier)}</div>
+              <div key={a.qid} style={{ fontSize: 26 }}>{getFeedback(a.rawScore).emoji}</div>
             ))}
           </div>
           <div style={{ textAlign: "left", maxWidth: 420, margin: "0 auto 18px" }}>

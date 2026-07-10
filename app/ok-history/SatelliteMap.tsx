@@ -12,12 +12,13 @@ interface SatelliteMapProps {
   guess: LatLon | null;
   actual: (LatLon & { label: string }) | null;
   onPick: (lat: number, lon: number) => void;
+  onConfirm: (lat: number, lon: number) => void;
 }
 
 const OK_BOUNDS: [[number, number], [number, number]] = [[32.6, -104.6], [37.7, -93.3]];
 const OK_CENTER: [number, number] = [35.55, -98.35];
 
-export default function SatelliteMap({ resetKey, locked, guess, actual, onPick }: SatelliteMapProps) {
+export default function SatelliteMap({ resetKey, locked, guess, actual, onPick, onConfirm }: SatelliteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LType.Map | null>(null);
   const guessLayerRef = useRef<LType.CircleMarker | null>(null);
@@ -25,8 +26,10 @@ export default function SatelliteMap({ resetKey, locked, guess, actual, onPick }
   const lineLayerRef = useRef<LType.Polyline | null>(null);
   const lockedRef = useRef(locked);
   const onPickRef = useRef(onPick);
+  const onConfirmRef = useRef(onConfirm);
   lockedRef.current = locked;
   onPickRef.current = onPick;
+  onConfirmRef.current = onConfirm;
 
   // Init map once
   useEffect(() => {
@@ -42,15 +45,26 @@ export default function SatelliteMap({ resetKey, locked, guess, actual, onPick }
         maxBounds: OK_BOUNDS,
         maxBoundsViscosity: 0.9,
         attributionControl: true,
+        doubleClickZoom: false,
       });
       L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         maxZoom: 19,
         attribution: "Tiles &copy; Esri",
       }).addTo(map);
       map.fitBounds([[33.55, -103.1], [37.15, -94.35]]);
+      let lastClick: { point: LType.Point; time: number } | null = null;
       map.on("click", (e: LType.LeafletMouseEvent) => {
         if (lockedRef.current) return;
-        onPickRef.current(e.latlng.lat, e.latlng.lng);
+        const point = map.latLngToContainerPoint(e.latlng);
+        const now = Date.now();
+        const isDoubleTap = Boolean(lastClick) && now - lastClick!.time < 450 && point.distanceTo(lastClick!.point) < 25;
+        if (isDoubleTap) {
+          lastClick = null;
+          onConfirmRef.current(e.latlng.lat, e.latlng.lng);
+        } else {
+          lastClick = { point, time: now };
+          onPickRef.current(e.latlng.lat, e.latlng.lng);
+        }
       });
       mapRef.current = map;
     })();
