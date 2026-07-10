@@ -512,6 +512,9 @@ const QUESTIONS: Question[] = [
   { id: 150, category: "sports", place: "Stillwater", lat: 36.1156, lon: -97.0584,
     text: "This university's head football coach has held the job since 2005, becoming known nationally for an animated, viral postgame rant defending his players.",
     fact: "Mike Gundy's 'I'm a man! I'm 40!' speech in 2007 became one of the most-replayed moments in college football media history." },
+  { id: 151, category: "sports", place: "Yukon", lat: 35.5067, lon: -97.7395,
+    text: "In the late 1990s, this town's high school football team was led by a standout running back who earned Jewish All-American honors before going on to play college ball at Oklahoma State.",
+    fact: "Richard Schwarz starred for the Yukon Millers before becoming a running back for the Oklahoma State Cowboys." },
 ];
 
 const BASE_POINTS = 100;
