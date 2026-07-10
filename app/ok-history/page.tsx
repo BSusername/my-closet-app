@@ -9,7 +9,7 @@ const SatelliteMap = dynamic(() => import("./SatelliteMap"), { ssr: false,
     justifyContent: "center", color: "#7a6548", fontSize: 13 }}>Loading satellite map…</div> });
 
 // ─── Types ────────────────────────────────────────────────────────────
-type Category = "history" | "person" | "fun";
+type Category = "history" | "person" | "fun" | "pop";
 interface Question {
   id: number;
   category: Category;
@@ -23,6 +23,7 @@ interface Answer {
   qid: number;
   distance: number;
   score: number;
+  multiplier: number;
   tapLat: number;
   tapLon: number;
 }
@@ -44,11 +45,12 @@ const CATEGORY_META: Record<Category, { label: string; emoji: string; color: str
   history: { label: "HISTORY", emoji: "🏛️", color: "#1a3a5c" },
   person: { label: "FAMOUS OKLAHOMAN", emoji: "⭐", color: "#7a4a1a" },
   fun: { label: "FUN TRIVIA", emoji: "🎉", color: "#8a1a5c" },
+  pop: { label: "POP CULTURE & MUSIC", emoji: "🎸", color: "#1a6b5c" },
 };
 
-// ─── Question bank ────────────────────────────────────────────────────
+// ─── Question bank (100 questions) ─────────────────────────────────────
 const QUESTIONS: Question[] = [
-  // ── History ──
+  // ── History (25) ──
   { id: 1, category: "history", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
     text: "On April 22, 1889, thousands of settlers raced to stake claims here in the very first Oklahoma Land Run, turning open prairie into a tent city of 10,000 people by nightfall.",
     fact: "Oklahoma City became the state capital in 1910, after a contested vote moved it from Guthrie." },
@@ -94,8 +96,38 @@ const QUESTIONS: Question[] = [
   { id: 15, category: "history", place: "Okmulgee", lat: 35.6234, lon: -95.9538,
     text: "This city has served as the capital of the Muscogee (Creek) Nation since the tribe's forced removal from the southeastern U.S. in the 1830s.",
     fact: "Okmulgee's Creek Council House, built in 1878, still stands today as a museum." },
+  { id: 31, category: "history", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "In 1937, a local grocer here named Sylvan Goldman invented a folding-frame cart to help customers carry more purchases — an idea that changed shopping forever.",
+    fact: "Goldman reportedly hired models to push his new 'shopping carts' around his Humpty Dumpty stores to get skeptical customers to try them." },
+  { id: 32, category: "history", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "On April 19, 1995, a truck bomb destroyed the Alfred P. Murrah Federal Building here, killing 168 people in the deadliest act of domestic terrorism in U.S. history.",
+    fact: "The site is now the Oklahoma City National Memorial, with 168 empty chairs honoring each victim." },
+  { id: 33, category: "history", place: "Tulsa", lat: 36.1540, lon: -95.9928,
+    text: "A police officer here named Clinton Riggs designed the distinctive triangular road sign that tells American drivers to yield.",
+    fact: "The Tulsa Police Department tested Riggs's yellow YIELD sign on city streets in the 1950s before it spread nationwide." },
+  { id: 34, category: "history", place: "Beggs", lat: 35.7492, lon: -96.0227,
+    text: "A steel guitarist from this small town, Bob Dunn, built one of the first electrically amplified guitars in 1935 — years before the idea caught on nationally.",
+    fact: "Dunn's amplified steel guitar helped pave the way for the electric guitars that would define rock and roll." },
+  { id: 35, category: "history", place: "Pawhuska", lat: 36.6759, lon: -96.3336,
+    text: "This Osage Nation capital was the site of a string of unsolved murders of wealthy Osage oil-rights holders in the 1920s, later investigated by the young FBI.",
+    fact: "The Osage 'Reign of Terror' murders were the subject of the bestselling book and film 'Killers of the Flower Moon.'" },
+  { id: 36, category: "history", place: "Wewoka", lat: 35.1470, lon: -96.4956,
+    text: "This is the capital of the Seminole Nation, established after the tribe's forced removal to Indian Territory in the 1830s and 40s.",
+    fact: "Wewoka means 'barking water' in the Seminole language, named for a nearby waterfall." },
+  { id: 37, category: "history", place: "Muskogee", lat: 35.7479, lon: -95.3697,
+    text: "This city was the federal government's administrative headquarters for overseeing the Five Civilized Tribes in Indian Territory during the late 1800s.",
+    fact: "Muskogee is home to the Five Civilized Tribes Museum, housed in the old Union Indian Agency building." },
+  { id: 38, category: "history", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "After decades of devastating tornadoes across the state, this university city became home to the National Severe Storms Laboratory and a hub for modern storm-warning research.",
+    fact: "Norman's severe-weather research helped pioneer Doppler radar techniques now used to issue tornado warnings nationwide." },
+  { id: 39, category: "history", place: "Guymon", lat: 36.6828, lon: -101.4816,
+    text: "This Panhandle city sat at the center of the 1930s Dust Bowl, when massive dust storms buried farms and forced thousands of families to flee the region.",
+    fact: "The most severe of these storms, on April 14, 1935, became known as 'Black Sunday.'" },
+  { id: 40, category: "history", place: "McAlester", lat: 34.9339, lon: -95.7697,
+    text: "Established during World War II, one of the largest ammunition production and storage facilities in the world still operates just outside this southeastern Oklahoma city.",
+    fact: "The McAlester Army Ammunition Plant remains a major employer in the region today." },
 
-  // ── Famous Oklahomans ──
+  // ── Famous Oklahomans (25) ──
   { id: 16, category: "person", place: "Okemah", lat: 35.4323, lon: -96.3033,
     text: "A dust-bowl era folk singer who wrote 'This Land Is Your Land' was born in this small east-central Oklahoma town in 1912.",
     fact: "Woody Guthrie's songs about migrant workers and hard times went on to inspire Bob Dylan and generations of songwriters." },
@@ -126,8 +158,53 @@ const QUESTIONS: Question[] = [
   { id: 25, category: "person", place: "Clinton", lat: 35.5153, lon: -98.9679,
     text: "A country singer known for anthems like 'Should've Been a Cowboy' and 'Courtesy of the Red, White and Blue' was born in this Route 66 town in 1961.",
     fact: "Toby Keith was raised largely in Oklahoma City and often credited his Oklahoma roots for his songwriting." },
+  { id: 41, category: "person", place: "Weatherford", lat: 35.5323, lon: -98.7020,
+    text: "An astronaut born in this western Oklahoma town commanded three space missions, including Apollo 10 — the 'dress rehearsal' for the first Moon landing.",
+    fact: "Thomas Stafford is honored with the Stafford Air & Space Museum in his hometown of Weatherford." },
+  { id: 42, category: "person", place: "Enid", lat: 36.3956, lon: -97.8784,
+    text: "An astronaut born in this city flew aboard Skylab 3 in 1973, spending nearly two months living aboard America's first space station.",
+    fact: "Owen K. Garriott later became one of the first amateur radio operators to broadcast from orbit." },
+  { id: 43, category: "person", place: "Bethany", lat: 35.5031, lon: -97.6314,
+    text: "An astronaut raised in this Oklahoma City suburb once held the American record for the longest single spaceflight by a woman, after months aboard the Russian space station Mir.",
+    fact: "Shannon Lucid became a national hero in 1996 after her 188-day mission aboard Mir." },
+  { id: 44, category: "person", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "The author of the landmark 1952 novel 'Invisible Man,' exploring Black identity in America, was born in this city in 1913.",
+    fact: "Ralph Ellison's novel won the National Book Award and remains a cornerstone of 20th-century American literature." },
+  { id: 45, category: "person", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "An NBA All-Star forward and the first overall pick of the 2009 draft was born in this city and later starred collegiately at nearby Oklahoma University.",
+    fact: "Blake Griffin became known for his explosive dunks and highlight-reel athleticism." },
+  { id: 46, category: "person", place: "Edmond", lat: 35.6528, lon: -97.4781,
+    text: "An Olympic gymnast who grew up in this Oklahoma City suburb became, at the time, the most decorated athlete in U.S. gymnastics history.",
+    fact: "Shannon Miller won seven Olympic medals across the 1992 and 1996 Games." },
+  { id: 47, category: "person", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "A future Emmy-winning actor known for playing rugged, everyman heroes on TV and in film was born in this university city in 1928.",
+    fact: "James Garner starred in 'Maverick' and 'The Rockford Files' before a long, celebrated film career." },
+  { id: 48, category: "person", place: "Maysville", lat: 34.8181, lon: -97.3986,
+    text: "Near this small southern Oklahoma town, a farm boy who later became the first pilot to fly solo around the world was born in 1898.",
+    fact: "Wiley Post also pioneered a pressurized flight suit, a forerunner of the modern spacesuit, before dying in a 1935 plane crash with Will Rogers." },
+  { id: 49, category: "person", place: "Stilwell", lat: 35.8109, lon: -94.6238,
+    text: "Near this far-eastern Oklahoma town lived the first woman ever elected Principal Chief of the Cherokee Nation.",
+    fact: "Wilma Mankiller led the Cherokee Nation from 1985 to 1995 and remains one of the most influential Native American leaders in U.S. history." },
+  { id: 50, category: "person", place: "Binger", lat: 35.2998, lon: -98.3492,
+    text: "A future Cincinnati Reds Hall of Fame catcher, widely considered one of the greatest ever at his position, was raised in this small western Oklahoma town.",
+    fact: "Johnny Bench won two World Series and was a 14-time All-Star during his career." },
+  { id: 51, category: "person", place: "Miami", lat: 36.8742, lon: -94.8777,
+    text: "A running back born in this far-northeastern Oklahoma city won the Heisman Trophy in 1969 while playing for the University of Oklahoma.",
+    fact: "Steve Owens remains one of only a handful of Oklahoma Sooners to win college football's top individual honor." },
+  { id: 52, category: "person", place: "Marshall", lat: 36.4834, lon: -97.6156,
+    text: "One of Oklahoma's most respected historians, who wrote extensively about Native American and frontier history despite facing discrimination as a woman scholar, lived most of her life in this small town.",
+    fact: "Angie Debo's work is still considered essential reading on the history of Indian Territory." },
+  { id: 53, category: "person", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "In 1958, a local NAACP Youth Council leader organized a sit-in at a downtown lunch counter here, one of the first successful sit-in protests of the civil rights era.",
+    fact: "Clara Luper led the Katz Drug Store sit-in years before similar protests spread across the South." },
+  { id: 54, category: "person", place: "Fairfax", lat: 36.5698, lon: -96.7061,
+    text: "Born in this Osage Nation town in 1925, a woman became America's first major Native American prima ballerina, dancing lead roles for the New York City Ballet.",
+    fact: "Maria Tallchief was renowned for originating the role of the Sugar Plum Fairy in George Balanchine's 'The Nutcracker.'" },
+  { id: 55, category: "person", place: "Wetumka", lat: 35.2434, lon: -96.2400,
+    text: "A member of the Chickasaw Nation from this small town became the first Native American to fly in space, aboard the Space Shuttle in 2002.",
+    fact: "John Herrington performed a spacewalk during his mission and later biked across the country to encourage Native youth in science and math." },
 
-  // ── Fun trivia ──
+  // ── Fun trivia (25) ──
   { id: 26, category: "fun", place: "Catoosa", lat: 36.1892, lon: -95.7469,
     text: "A big blue sea creature has called this landlocked Route 66 town home since 1972 — built out of iron and concrete as an anniversary gift, not an ocean in sight.",
     fact: "The Blue Whale of Catoosa was built by Hugh Davis as a surprise gift for his wife Zelta, who collected whale figurines." },
@@ -143,10 +220,148 @@ const QUESTIONS: Question[] = [
   { id: 30, category: "fun", place: "Vinita", lat: 36.6417, lon: -95.1533,
     text: "For decades this town was home to the world's largest McDonald's — a restaurant built as a bridge spanning an entire interstate turnpike.",
     fact: "Opened in 1958 as 'The Glass House,' the building was renamed the Will Rogers Archway in 2014." },
+  { id: 56, category: "fun", place: "Durant", lat: 33.9937, lon: -96.3708,
+    text: "A four-foot-tall, 2,000-pound concrete peanut sits proudly on a pedestal in this southern Oklahoma town, celebrating a favorite regional crop.",
+    fact: "Durant's giant peanut is one of many oversized roadside monuments scattered across Oklahoma's small towns." },
+  { id: 57, category: "fun", place: "Arcadia", lat: 35.6534, lon: -97.3239,
+    text: "Built in 1898 out of native sandstone, this town's round barn is one of the few true circular barns left standing anywhere along Route 66.",
+    fact: "The design was believed by its builder to be more resistant to Oklahoma's fierce winds than a traditional square barn." },
+  { id: 58, category: "fun", place: "Tulsa", lat: 36.1541, lon: -95.9963,
+    text: "A 21-foot-tall cosmic cowboy in a spacesuit, holding a rocket ship, stands guard outside a curio shop along this city's stretch of Route 66.",
+    fact: "The statue, nicknamed 'Buck Atom,' has become a popular photo stop for Route 66 road-trippers." },
+  { id: 59, category: "fun", place: "Beaver", lat: 36.8098, lon: -100.5296,
+    text: "Every April, this Panhandle town hosts the World Championship Cow Chip Throwing Contest, where competitors fling dried cow patties for distance.",
+    fact: "The contest has been a beloved Beaver County tradition since the 1970s." },
+  { id: 60, category: "fun", place: "Duncan", lat: 34.5023, lon: -97.9578,
+    text: "Erle P. Halliburton founded his oilfield cementing company in this town in 1919, growing it into one of the world's largest energy services corporations.",
+    fact: "Duncan is also home to the Chisholm Trail Heritage Center, honoring the historic cattle-driving route." },
+  { id: 61, category: "fun", place: "Sulphur", lat: 34.5087, lon: -96.9761,
+    text: "Natural mineral springs once believed to have healing powers made this town home to one of the smallest national parks in U.S. history before it was folded into a larger recreation area.",
+    fact: "Platt National Park, established in 1906, is now part of the Chickasaw National Recreation Area." },
+  { id: 62, category: "fun", place: "Watonga", lat: 35.8531, lon: -98.4234,
+    text: "This western Oklahoma town has celebrated its dairy heritage every fall since the 1940s with a festival built around a local cheese factory.",
+    fact: "The Watonga Cheese Festival draws visitors from across the state to sample fresh curds and cheddar." },
+  { id: 63, category: "fun", place: "Hugo", lat: 34.0098, lon: -95.5197,
+    text: "Nicknamed 'Circus City, USA,' this southeastern Oklahoma town has served as the off-season home for traveling circuses for decades, complete with a circus-performers' cemetery.",
+    fact: "Hugo's Mount Olivet Cemetery includes a section called 'Showmen's Rest,' the final resting place of circus performers." },
+  { id: 64, category: "fun", place: "Elk City", lat: 35.4120, lon: -99.4046,
+    text: "A giant cowboy statue greets visitors outside the National Route 66 Museum in this western Oklahoma city.",
+    fact: "The museum's exhibits trace the Mother Road's path across Oklahoma, which has more original miles of Route 66 than any other state." },
+  { id: 65, category: "fun", place: "Broken Bow", lat: 34.0298, lon: -94.7385,
+    text: "Nearby pine-covered mountains and a sparkling reservoir make this southeastern Oklahoma town feel more like the Ozarks than the plains most people picture.",
+    fact: "Beavers Bend State Park, just outside town, is consistently ranked among Oklahoma's most-visited state parks." },
+  { id: 66, category: "fun", place: "Claremore", lat: 36.3126, lon: -95.6081,
+    text: "This town is home to the largest privately assembled firearms collection in the world, housed in a museum founded by a local businessman.",
+    fact: "The J.M. Davis Arms & Historical Museum displays more than 20,000 guns." },
+  { id: 67, category: "fun", place: "Pauls Valley", lat: 34.7401, lon: -97.2222,
+    text: "Shelves of vintage action figures and toys fill a quirky museum in this south-central Oklahoma town, delighting collectors and nostalgic visitors alike.",
+    fact: "The Toy and Action Figure Museum in Pauls Valley houses thousands of pieces spanning decades of pop culture." },
+  { id: 68, category: "fun", place: "Idabel", lat: 33.8935, lon: -94.8232,
+    text: "A museum in this far-southeastern Oklahoma town displays the bones of an ice-age mammoth unearthed nearby, alongside other regional natural history exhibits.",
+    fact: "The Museum of the Red River in Idabel also features an extensive collection of pre-Columbian art." },
+  { id: 69, category: "fun", place: "Chandler", lat: 35.7017, lon: -96.8814,
+    text: "A distinctive 1930s stone armory building in this Route 66 town now serves as an interpretive center celebrating the highway's history.",
+    fact: "The Route 66 Interpretive Center in Chandler occupies a National Guard armory built by the Works Progress Administration." },
+  { id: 70, category: "fun", place: "Clinton", lat: 35.5153, lon: -98.9679,
+    text: "This Route 66 town is home to the Oklahoma Route 66 Museum, tracing the highway's decades of evolution from dirt trail to interstate relic.",
+    fact: "Clinton sits roughly at the midpoint of Oklahoma's stretch of the historic highway." },
+  { id: 71, category: "fun", place: "Eufaula", lat: 35.2887, lon: -95.6377,
+    text: "Sitting on Oklahoma's largest lake by surface area, this town proudly calls itself the 'Catfish Capital of the World.'",
+    fact: "Lake Eufaula covers over 100,000 acres and is a major draw for anglers across the region." },
+  { id: 72, category: "fun", place: "Grove", lat: 36.5956, lon: -94.7719,
+    text: "Perched on the shore of Grand Lake o' the Cherokees, this town is home to a sprawling pioneer-village museum packed with antique buildings and artifacts.",
+    fact: "Har-Ber Village Museum features dozens of reconstructed historic buildings overlooking the lake." },
+  { id: 73, category: "fun", place: "Stroud", lat: 35.7473, lon: -96.6592,
+    text: "A historic Route 66 diner in this small town, built from local roadbed stone in 1936, is said to have inspired a beloved animated film location.",
+    fact: "The Rock Café in Stroud has been cited as an inspiration for a character's diner in Pixar's 'Cars.'" },
+  { id: 74, category: "fun", place: "El Reno", lat: 35.5322, lon: -97.9550,
+    text: "Legend says a Depression-era cook here stretched scarce ground beef by smashing it thin with a pile of onions, inventing a burger style now celebrated every May with its own festival.",
+    fact: "El Reno's Fried Onion Burger Day draws thousands of visitors for a burger said to weigh over 700 pounds when made as a single giant patty." },
+  { id: 75, category: "fun", place: "Davis", lat: 34.2334, lon: -97.1567,
+    text: "Just outside this small town, water tumbles 77 feet down Oklahoma's tallest waterfall, a popular swimming spot carved into the Arbuckle Mountains.",
+    fact: "Turner Falls Park has drawn Oklahoma swimmers and picnickers since the early 1900s." },
+
+  // ── Pop culture & music (25) ──
+  { id: 76, category: "pop", place: "Oklahoma City", lat: 35.4676, lon: -97.5164,
+    text: "A psychedelic rock band known for elaborate stage shows and the song 'Do You Realize??' formed in this city in 1983.",
+    fact: "The Flaming Lips' frontman Wayne Coyne has become a beloved, larger-than-life fixture of Oklahoma City's arts scene." },
+  { id: 77, category: "pop", place: "Tulsa", lat: 36.1540, lon: -95.9928,
+    text: "Three brothers from this city formed a pop-rock band as teenagers, scoring a massive global hit in 1997 with 'MMMBop.'",
+    fact: "Hanson has continued releasing music together for decades and still calls Tulsa home." },
+  { id: 78, category: "pop", place: "Lawton", lat: 34.6036, lon: -98.3959,
+    text: "A prolific session musician, songwriter, and producer nicknamed the 'Master of Space and Time' was born in this city in 1942.",
+    fact: "Leon Russell wrote hits for other artists and was inducted into the Rock and Roll Hall of Fame in 2011." },
+  { id: 79, category: "pop", place: "Tulsa", lat: 36.1540, lon: -95.9928,
+    text: "A laid-back guitarist raised in this city wrote 'After Midnight' and 'Cocaine,' songs that later became massive hits for Eric Clapton.",
+    fact: "J.J. Cale's understated style helped define what became known as the 'Tulsa Sound.'" },
+  { id: 80, category: "pop", place: "Maud", lat: 34.8506, lon: -96.7717,
+    text: "Dubbed the 'Queen of Rockabilly,' a pioneering female rock and roll singer was born in this small town in 1937.",
+    fact: "Wanda Jackson toured with Elvis Presley early in her career and was inducted into the Rock and Roll Hall of Fame in 2009." },
+  { id: 81, category: "pop", place: "Norman", lat: 35.2226, lon: -97.4395,
+    text: "A country singer-songwriter born in this city has won 21 Grammy Awards, more than almost any other country artist in history.",
+    fact: "Vince Gill is also a longtime member of the Eagles and a fixture of the Grand Ole Opry." },
+  { id: 82, category: "pop", place: "Broken Arrow", lat: 36.0526, lon: -95.7908,
+    text: "A Tony and Emmy-winning actress and singer known for originating a lead role in Broadway's 'Wicked' was born in this Tulsa suburb.",
+    fact: "Kristin Chenoweth later starred in the TV series 'Pushing Daisies' and 'Glee.'" },
+  { id: 83, category: "pop", place: "Ada", lat: 34.7746, lon: -96.6783,
+    text: "A country singer born in this town in 1976 became a longtime coach on NBC's singing competition 'The Voice.'",
+    fact: "Blake Shelton has racked up numerous CMA and ACM Awards throughout his career." },
+  { id: 84, category: "pop", place: "Wakita", lat: 36.8748, lon: -97.9836,
+    text: "This tiny north-central Oklahoma town became the primary filming location for a 1996 blockbuster about storm-chasers hunting tornadoes.",
+    fact: "'Twister' filming brought Hollywood attention to Wakita, which still hosts a small museum devoted to the movie." },
+  { id: 85, category: "pop", place: "Owasso", lat: 36.2695, lon: -95.8547,
+    text: "Director Francis Ford Coppola filmed much of his 1983 classic here, based on a novel by a Tulsa-born teenage author about rival teenage gangs.",
+    fact: "'The Outsiders' was based on S.E. Hinton's novel, written when she was still a teenager herself." },
+  { id: 86, category: "pop", place: "Pawhuska", lat: 36.6759, lon: -96.3336,
+    text: "This Osage Nation town has hosted major Hollywood productions, including a 2013 film starring Meryl Streep and a 2023 Martin Scorsese epic about its own dark history.",
+    fact: "'August: Osage County' and 'Killers of the Flower Moon' were both filmed extensively in and around Pawhuska." },
+  { id: 87, category: "pop", place: "Okmulgee", lat: 35.6234, lon: -95.9538,
+    text: "An acclaimed FX comedy series following four Indigenous teenagers in rural Oklahoma was filmed extensively in and around this town.",
+    fact: "'Reservation Dogs' was praised for its almost entirely Indigenous cast and creative team." },
+  { id: 88, category: "pop", place: "Muskogee", lat: 35.7479, lon: -95.3697,
+    text: "Merle Haggard's 1969 song about small-town, flag-waving pride put this city's name into the American pop-culture lexicon, even though Haggard himself was from California.",
+    fact: "'Okie from Muskogee' became one of the most famous — and debated — songs of its era." },
+  { id: 89, category: "pop", place: "Bartlesville", lat: 36.7473, lon: -95.9808,
+    text: "The only skyscraper legendary architect Frank Lloyd Wright ever saw built stands in this small Oklahoma city.",
+    fact: "The 19-story Price Tower, completed in 1956, is now a National Historic Landmark." },
+  { id: 90, category: "pop", place: "Guthrie", lat: 35.8786, lon: -97.4256,
+    text: "Scenes from the Best Picture-winning 1988 film 'Rain Man,' starring Dustin Hoffman and Tom Cruise, were filmed in this historic Oklahoma town.",
+    fact: "Guthrie's well-preserved Victorian-era downtown has made it a popular filming location for period pieces." },
+  { id: 91, category: "pop", place: "Ponca City", lat: 36.7065, lon: -97.0856,
+    text: "An oil baron who later became Oklahoma's governor built a 55-room mansion here, nicknamed the 'Palace on the Prairie,' that has since appeared in film and television.",
+    fact: "The Marland Mansion was built by E.W. Marland in the 1920s and remains one of the state's grandest historic homes." },
+  { id: 92, category: "pop", place: "Miami", lat: 36.8742, lon: -94.8777,
+    text: "An ornate 1929 Spanish Mission Revival movie palace along Route 66 in this town still hosts live performances today.",
+    fact: "The Coleman Theatre's opulent interior earned it a spot on the National Register of Historic Places." },
+  { id: 93, category: "pop", place: "Tulsa", lat: 36.1520, lon: -95.9910,
+    text: "A legendary honky-tonk dance hall in this city launched the 'Western Swing' sound of Bob Wills and His Texas Playboys in the 1930s, and decades later hosted the Sex Pistols' infamous only U.S. tour stop.",
+    fact: "Cain's Ballroom remains one of the most storied music venues in American history." },
+  { id: 94, category: "pop", place: "Gene Autry", lat: 34.3298, lon: -97.1364,
+    text: "This tiny town renamed itself in 1941 in honor of a singing cowboy movie star who broadcast a radio show from the area.",
+    fact: "The town of Gene Autry, Oklahoma is home to the small Gene Autry Oklahoma Museum celebrating the era of singing cowboys." },
+  { id: 95, category: "pop", place: "Sapulpa", lat: 35.9987, lon: -96.1142,
+    text: "A ceramics factory founded here in 1933 became one of the most recognizable pottery brands in America, prized by collectors for its distinctive glazes.",
+    fact: "Frankoma Pottery pieces remain highly sought after at flea markets and antique shows nationwide." },
+  { id: 96, category: "pop", place: "Cushing", lat: 35.9851, lon: -96.7642,
+    text: "Known as the 'Pipeline Crossroads of the World,' this small city's name is announced on financial news broadcasts around the globe every day as an oil-price benchmark location.",
+    fact: "The WTI crude oil price quoted worldwide is often specifically priced for delivery at Cushing, Oklahoma." },
+  { id: 97, category: "pop", place: "Poteau", lat: 35.0512, lon: -94.6238,
+    text: "Nearby Cavanal Hill is billed as the world's highest hill — its makers say it falls just short of the technical definition of a mountain, a quirky claim to fame featured in Ripley's Believe It or Not.",
+    fact: "Cavanal Hill rises about 1,999 feet, reportedly just below the 2,000-foot mountain threshold." },
+  { id: 98, category: "pop", place: "Claremore", lat: 36.3126, lon: -95.6081,
+    text: "A playwright born in this town in 1899 wrote 'Green Grow the Lilacs,' the play that Rodgers and Hammerstein later adapted into a landmark Broadway musical named after the state itself.",
+    fact: "Lynn Riggs's play became the basis for 'Oklahoma!,' the first musical from the legendary Rodgers and Hammerstein partnership." },
+  { id: 99, category: "pop", place: "Stillwater", lat: 36.1156, lon: -97.0584,
+    text: "Long before global superstardom, a future country music icon played local bars in this college town while attending Oklahoma State University in the 1980s.",
+    fact: "Garth Brooks has credited his years in Stillwater with shaping the performer he became." },
+  { id: 100, category: "pop", place: "Pawnee", lat: 36.3384, lon: -96.7986,
+    text: "A famous traveling Wild West show, featuring trick riders and sharpshooters, was headquartered near this town in the early 1900s, part of a national craze for frontier-themed entertainment.",
+    fact: "Pawnee Bill's Wild West Show toured the country alongside contemporaries like Buffalo Bill's, blending real ranch life with theatrical spectacle." },
 ];
 
-const POINT_VALUES = [100, 100, 200, 300, 300];
-const DAILY_MIX: Category[] = ["history", "history", "person", "person", "fun"];
+const BASE_POINTS = 100;
+const ALL_MULTIPLIERS = [1, 2, 3, 4, 5];
+const DAILY_MIX_BASE: Category[] = ["history", "person", "fun", "pop"];
 
 function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8;
@@ -187,9 +402,11 @@ function shuffled<T>(arr: T[], rand: () => number): T[] {
 }
 function questionsForDate(dateKey: string): Question[] {
   const rand = mulberry32(hashStr(dateKey));
+  const wildcard = DAILY_MIX_BASE[Math.floor(rand() * DAILY_MIX_BASE.length)];
+  const mix = [...DAILY_MIX_BASE, wildcard];
   const used = new Set<number>();
   const picks: Question[] = [];
-  for (const cat of DAILY_MIX) {
+  for (const cat of mix) {
     const pool = QUESTIONS.filter(q => q.category === cat && !used.has(q.id));
     const pick = shuffled(pool, rand)[0] || shuffled(QUESTIONS.filter(q => !used.has(q.id)), rand)[0];
     if (pick) { picks.push(pick); used.add(pick.id); }
@@ -229,6 +446,8 @@ function tierEmoji(score: number, max: number): string {
   return "🟥";
 }
 
+const ROUND_MAX = BASE_POINTS * ALL_MULTIPLIERS.reduce((a, b) => a + b, 0); // 1500
+
 // ─── Component ────────────────────────────────────────────────────────
 export default function OKHistoryGame() {
   const dateKey = useMemo(() => todayKey(), []);
@@ -238,6 +457,8 @@ export default function OKHistoryGame() {
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [pendingTap, setPendingTap] = useState<LatLon | null>(null);
+  const [selectedMultiplier, setSelectedMultiplier] = useState<number | null>(null);
+  const [usedMultipliers, setUsedMultipliers] = useState<number[]>([]);
   const [lastAnswer, setLastAnswer] = useState<Answer | null>(null);
   const [stats, setStats] = useState<Stats>({ played: 0, totalScore: 0, bestScore: 0, streak: 0, bestStreak: 0, lastPlayedDate: null });
   const [copied, setCopied] = useState(false);
@@ -261,18 +482,20 @@ export default function OKHistoryGame() {
   }, []);
 
   const lockInGuess = () => {
-    if (!pendingTap || !current) return;
+    if (!pendingTap || !current || !selectedMultiplier) return;
     const distance = haversineMiles(pendingTap.lat, pendingTap.lon, current.lat, current.lon);
-    const max = POINT_VALUES[qIndex];
+    const max = BASE_POINTS * selectedMultiplier;
     const score = scoreFor(distance, max);
-    const answer: Answer = { qid: current.id, distance, score, tapLat: pendingTap.lat, tapLon: pendingTap.lon };
+    const answer: Answer = { qid: current.id, distance, score, multiplier: selectedMultiplier, tapLat: pendingTap.lat, tapLon: pendingTap.lon };
     setLastAnswer(answer);
     setAnswers(p => [...p, answer]);
+    setUsedMultipliers(p => [...p, selectedMultiplier]);
     setPhase("reveal");
   };
 
   const nextQuestion = () => {
     setPendingTap(null);
+    setSelectedMultiplier(null);
     setLastAnswer(null);
     if (qIndex + 1 >= questions.length) {
       const finalTotal = answers.reduce((sum, a) => sum + a.score, 0);
@@ -297,12 +520,12 @@ export default function OKHistoryGame() {
     }
   };
 
-  const startGame = () => { setQIndex(0); setAnswers([]); setPhase("playing"); };
+  const startGame = () => { setQIndex(0); setAnswers([]); setUsedMultipliers([]); setSelectedMultiplier(null); setPhase("playing"); };
 
   const shareText = useMemo(() => {
     const total = answers.reduce((s, a) => s + a.score, 0);
-    const squares = answers.map((a, i) => tierEmoji(a.score, POINT_VALUES[i])).join("");
-    return `OK History ${dateKey} — ${total}/1000\n${squares}\nhttps://geohistory.gg`;
+    const squares = answers.map(a => tierEmoji(a.score, BASE_POINTS * a.multiplier)).join("");
+    return `OK History ${dateKey} — ${total}/${ROUND_MAX}\n${squares}\nhttps://geohistory.gg`;
   }, [answers, dateKey]);
 
   const doShare = () => {
@@ -314,6 +537,7 @@ export default function OKHistoryGame() {
   };
 
   const catMeta = current ? CATEGORY_META[current.category] : null;
+  const canLockIn = Boolean(pendingTap && selectedMultiplier);
 
   return (
     <div style={{ minHeight: "100vh", maxWidth: 560, margin: "0 auto", position: "relative",
@@ -329,7 +553,7 @@ export default function OKHistoryGame() {
       <header style={{ padding: "22px 20px 14px", textAlign: "center", background: "#1a3a5c", color: "#fbf3e3" }}>
         <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.75, fontWeight: 700 }}>DAILY TRIVIA</div>
         <h1 style={{ fontSize: 30, margin: "4px 0 2px", fontWeight: 800, letterSpacing: -0.5 }}>OK History</h1>
-        <div style={{ fontSize: 13, opacity: 0.85 }}>Tap the satellite map. Guess where it happened in Oklahoma.</div>
+        <div style={{ fontSize: 13, opacity: 0.85 }}>Tap the satellite map. Wager your confidence. Guess where it happened.</div>
       </header>
 
       {phase === "loading" && <div style={{ padding: 60, textAlign: "center" }}>Loading today&apos;s round…</div>}
@@ -337,8 +561,12 @@ export default function OKHistoryGame() {
       {phase === "intro" && (
         <div className="okh-fade" style={{ padding: 24, textAlign: "center" }}>
           <p style={{ fontSize: 15, lineHeight: 1.6, color: "#5a4630" }}>
-            5 questions about Oklahoma history, famous Oklahomans, and fun trivia. Tap the spot on the satellite map where
-            you think the answer is — the closer you are, the more points you score. Everyone gets the same 5 questions each day.
+            5 questions about Oklahoma history, famous Oklahomans, fun trivia, and pop culture &amp; music. Tap the spot on the
+            satellite map where you think the answer is — the closer you are, the more points you score.
+          </p>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: "#5a4630", marginTop: 8 }}>
+            Each question is worth <b>100 points</b>, but before you lock in a guess you also pick a <b>confidence multiplier
+            from ×1 to ×5</b>. Each multiplier can only be used once per round — save your ×5 for the one you&apos;re sure about.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "14px 0", flexWrap: "wrap" }}>
             {(Object.keys(CATEGORY_META) as Category[]).map(c => (
@@ -366,12 +594,12 @@ export default function OKHistoryGame() {
                 background: i < qIndex ? "#1a3a5c" : i === qIndex ? "#b5451f" : "#e3d3ae" }} />
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 6 }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
             <span style={{ background: catMeta.color, color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 10.5, fontWeight: 700 }}>
               {catMeta.emoji} {catMeta.label}
             </span>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: "#b5451f" }}>
-              Q{qIndex + 1} OF {questions.length} · UP TO {POINT_VALUES[qIndex]} PTS
+              Q{qIndex + 1} OF {questions.length} · {BASE_POINTS} PTS BASE
             </span>
           </div>
           <p style={{ fontSize: 15.5, lineHeight: 1.55, textAlign: "center", margin: "6px 0 14px", fontWeight: 600 }}>
@@ -389,18 +617,40 @@ export default function OKHistoryGame() {
           </div>
 
           {phase === "playing" && (
-            <div style={{ textAlign: "center", marginTop: 14 }}>
-              <button onClick={lockInGuess} disabled={!pendingTap} style={{
-                background: pendingTap ? "#1a3a5c" : "#ccc", color: "#fff", border: "none", borderRadius: 14,
-                padding: "13px 32px", fontSize: 15, fontWeight: 800, cursor: pendingTap ? "pointer" : "default" }}>
-                {pendingTap ? "Lock In Guess" : "Tap the map to guess"}
-              </button>
+            <div style={{ marginTop: 14 }}>
+              <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: "#7a6548", marginBottom: 8 }}>
+                CONFIDENCE — EACH MULTIPLIER USABLE ONCE PER ROUND
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 14 }}>
+                {ALL_MULTIPLIERS.map(m => {
+                  const used = usedMultipliers.includes(m);
+                  const sel = selectedMultiplier === m;
+                  return (
+                    <button key={m} disabled={used} onClick={() => setSelectedMultiplier(m)} style={{
+                      width: 48, height: 48, borderRadius: 12, border: sel ? "3px solid #b5451f" : "2px solid #d8c7a0",
+                      background: used ? "#e3d3ae" : sel ? "#b5451f" : "#fff", color: used ? "#b0a482" : sel ? "#fff" : "#3a2a18",
+                      fontSize: 16, fontWeight: 800, cursor: used ? "not-allowed" : "pointer",
+                      textDecoration: used ? "line-through" : "none", opacity: used ? 0.6 : 1 }}>
+                      ×{m}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <button onClick={lockInGuess} disabled={!canLockIn} style={{
+                  background: canLockIn ? "#1a3a5c" : "#ccc", color: "#fff", border: "none", borderRadius: 14,
+                  padding: "13px 32px", fontSize: 15, fontWeight: 800, cursor: canLockIn ? "pointer" : "default" }}>
+                  {!pendingTap ? "Tap the map to guess" : !selectedMultiplier ? "Pick a confidence multiplier" : `Lock In Guess (×${selectedMultiplier})`}
+                </button>
+              </div>
             </div>
           )}
 
           {phase === "reveal" && lastAnswer && (
             <div className="okh-fade" style={{ marginTop: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "#1a3a5c" }}>+{lastAnswer.score} pts</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#1a3a5c" }}>
+                +{lastAnswer.score} pts <span style={{ fontSize: 15, color: "#b5451f" }}>(×{lastAnswer.multiplier} confidence)</span>
+              </div>
               <div style={{ fontSize: 13.5, color: "#7a6548", marginBottom: 6 }}>
                 {Math.round(lastAnswer.distance)} miles from {current.place}
               </div>
@@ -418,21 +668,21 @@ export default function OKHistoryGame() {
         <div className="okh-fade" style={{ padding: 24, textAlign: "center" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#b5451f", letterSpacing: 1 }}>TODAY&apos;S SCORE</div>
           <div style={{ fontSize: 46, fontWeight: 800, color: "#1a3a5c", margin: "2px 0 10px" }}>
-            {answers.reduce((s, a) => s + a.score, 0)}<span style={{ fontSize: 20, color: "#9a8a68" }}>/1000</span>
+            {answers.reduce((s, a) => s + a.score, 0)}<span style={{ fontSize: 20, color: "#9a8a68" }}>/{ROUND_MAX}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 18 }}>
-            {answers.map((a, i) => (
-              <div key={a.qid} style={{ fontSize: 26 }}>{tierEmoji(a.score, POINT_VALUES[i])}</div>
+            {answers.map(a => (
+              <div key={a.qid} style={{ fontSize: 26 }}>{tierEmoji(a.score, BASE_POINTS * a.multiplier)}</div>
             ))}
           </div>
           <div style={{ textAlign: "left", maxWidth: 420, margin: "0 auto 18px" }}>
-            {answers.map((a, i) => {
+            {answers.map(a => {
               const q = QUESTIONS.find(q => q.id === a.qid);
               const meta = q ? CATEGORY_META[q.category] : null;
               return (
                 <div key={a.qid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px",
                   background: "rgba(255,255,255,0.55)", borderRadius: 10, marginBottom: 6, fontSize: 13.5, gap: 6 }}>
-                  <span>{meta?.emoji} {q?.place}</span>
+                  <span>{meta?.emoji} {q?.place} <span style={{ color: "#b5451f", fontWeight: 700 }}>×{a.multiplier}</span></span>
                   <span style={{ color: "#7a6548" }}>{Math.round(a.distance)} mi</span>
                   <b style={{ color: "#1a3a5c" }}>+{a.score}</b>
                 </div>
