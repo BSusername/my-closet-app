@@ -27,6 +27,7 @@ interface Answer {
   multiplier: number;
   tapLat: number;
   tapLon: number;
+  outsideOK?: boolean;
 }
 interface DayResult {
   date: string;
@@ -546,6 +547,17 @@ function todayKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function ordinal(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`;
+  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`;
+  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`;
+  return `${n}th`;
+}
+function formatShareDate(dateKey: string): string {
+  const [, m, d] = dateKey.split("-").map(Number);
+  return `${MONTH_NAMES[m - 1]} ${ordinal(d)}`;
+}
 function shuffled<T>(arr: T[], rand: () => number): T[] {
   const pool = [...arr];
   for (let i = pool.length - 1; i > 0; i--) {
@@ -649,6 +661,13 @@ function getFeedback(rawScore: number): FeedbackTier & { line: string } {
   const line = tier.lines[Math.floor(Math.random() * tier.lines.length)];
   return { ...tier, line };
 }
+const OUTSIDE_OK_FEEDBACK: FeedbackTier & { line: string } = {
+  min: 0, emoji: "🤠", label: "NOPE — SOONER SOIL", lines: [],
+  line: "Nice try, buckaroo, but every last one of these happened right here in the great state of Oklahoma.",
+};
+function feedbackFor(a: Answer): FeedbackTier & { line: string } {
+  return a.outsideOK ? OUTSIDE_OK_FEEDBACK : getFeedback(a.rawScore);
+}
 
 const ROUND_MAX = BASE_POINTS * ALL_MULTIPLIERS.reduce((a, b) => a + b, 0); // 1500
 
@@ -697,9 +716,24 @@ export default function OKHistoryGame() {
     setPhase("reveal");
   }, [current]);
 
+  const submitOutsideOK = useCallback((multiplier: number) => {
+    if (!current) return;
+    const answer: Answer = { qid: current.id, distance: NaN, score: 0, rawScore: 0, multiplier, tapLat: NaN, tapLon: NaN, outsideOK: true };
+    setLastAnswer(answer);
+    setAnswers(p => [...p, answer]);
+    setUsedMultipliers(p => [...p, multiplier]);
+    setPendingTap(null);
+    setPhase("reveal");
+  }, [current]);
+
   const lockInGuess = () => {
     if (!pendingTap || !selectedMultiplier) return;
     submitGuess(pendingTap.lat, pendingTap.lon, selectedMultiplier);
+  };
+
+  const lockInOutsideOK = () => {
+    if (!selectedMultiplier) return;
+    submitOutsideOK(selectedMultiplier);
   };
 
   const handleDoubleClick = useCallback((lat: number, lon: number) => {
@@ -741,9 +775,11 @@ export default function OKHistoryGame() {
 
   const shareText = useMemo(() => {
     const total = answers.reduce((s, a) => s + a.score, 0);
-    const squares = answers.map(a => getFeedback(a.rawScore).emoji).join("");
-    return `OK History ${dateKey} — ${total}/${ROUND_MAX}\n${squares}\nhttps://geohistory.gg`;
+    const squares = answers.map(a => feedbackFor(a).emoji).join("");
+    return `Geeokie · ${formatShareDate(dateKey)}\n${squares}\n${total} / ${ROUND_MAX}\nwww.geeokie.ok`;
   }, [answers, dateKey]);
+
+  const smsHref = useMemo(() => `sms:&body=${encodeURIComponent(shareText)}`, [shareText]);
 
   const doShare = () => {
     if (navigator.share) {
@@ -755,7 +791,7 @@ export default function OKHistoryGame() {
 
   const catMeta = current ? CATEGORY_META[current.category] : null;
   const canLockIn = Boolean(pendingTap && selectedMultiplier);
-  const revealFeedback = useMemo(() => lastAnswer ? getFeedback(lastAnswer.rawScore) : null, [lastAnswer]);
+  const revealFeedback = useMemo(() => lastAnswer ? feedbackFor(lastAnswer) : null, [lastAnswer]);
 
   return (
     <div style={{ minHeight: "100vh", maxWidth: 560, margin: "0 auto", position: "relative",
@@ -770,8 +806,10 @@ export default function OKHistoryGame() {
 
       <header style={{ padding: "22px 20px 14px", textAlign: "center", background: "#1a3a5c", color: "#fbf3e3" }}>
         <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.75, fontWeight: 700 }}>DAILY TRIVIA</div>
-        <h1 style={{ fontSize: 30, margin: "4px 0 2px", fontWeight: 800, letterSpacing: -0.5 }}>OK History</h1>
-        <div style={{ fontSize: 13, opacity: 0.85 }}>Tap the satellite map. Wager your confidence. Guess where it happened.</div>
+        <h1 style={{ fontSize: 30, margin: "4px 0 2px", fontWeight: 800, letterSpacing: -0.5 }}>
+          Gee<span style={{ color: "#e8735a" }}>okie</span>
+        </h1>
+        <div style={{ fontSize: 13, opacity: 0.85 }}>www.geeokie.ok — Tap the satellite map. Wager your confidence. Guess where it happened.</div>
       </header>
 
       {phase === "loading" && <div style={{ padding: 60, textAlign: "center" }}>Loading today&apos;s round…</div>}
@@ -868,6 +906,16 @@ export default function OKHistoryGame() {
                 <p style={{ fontSize: 11, color: "#9a8a68", marginTop: 8 }}>
                   Tip: double-tap (or double-click) a spot on the map to confirm it as your final answer instantly.
                 </p>
+                <button onClick={lockInOutsideOK} disabled={!selectedMultiplier} style={{
+                  background: "transparent", color: selectedMultiplier ? "#7a4a1a" : "#c4b697", border: "2px solid",
+                  borderColor: selectedMultiplier ? "#7a4a1a" : "#d8c7a0", borderRadius: 14,
+                  padding: "9px 20px", fontSize: 13, fontWeight: 700, marginTop: 10,
+                  cursor: selectedMultiplier ? "pointer" : "default" }}>
+                  🗺️ It Happened Outside of Oklahoma
+                </button>
+                <p style={{ fontSize: 10.5, color: "#9a8a68", marginTop: 6, maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>
+                  The map only covers Oklahoma — use this if you&apos;re sure the answer is somewhere else entirely (pick your multiplier first).
+                </p>
               </div>
             </div>
           )}
@@ -885,7 +933,9 @@ export default function OKHistoryGame() {
                 +{lastAnswer.score} pts <span style={{ fontSize: 15, color: "#b5451f" }}>(×{lastAnswer.multiplier} confidence)</span>
               </div>
               <div style={{ fontSize: 13.5, color: "#7a6548", marginBottom: 6 }}>
-                {Math.round(lastAnswer.distance)} miles from {current.place} · raw accuracy {lastAnswer.rawScore}/100
+                {lastAnswer.outsideOK
+                  ? `The answer was ${current.place}, Oklahoma`
+                  : `${Math.round(lastAnswer.distance)} miles from ${current.place} · raw accuracy ${lastAnswer.rawScore}/100`}
               </div>
               <p style={{ fontSize: 13, color: "#5a4630", lineHeight: 1.5, maxWidth: 420, margin: "0 auto 14px" }}>💡 {current.fact}</p>
               <button onClick={nextQuestion} style={{ background: "#b5451f", color: "#fff", border: "none", borderRadius: 14,
@@ -905,7 +955,7 @@ export default function OKHistoryGame() {
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 18 }}>
             {answers.map(a => (
-              <div key={a.qid} style={{ fontSize: 26 }}>{getFeedback(a.rawScore).emoji}</div>
+              <div key={a.qid} style={{ fontSize: 26 }}>{feedbackFor(a).emoji}</div>
             ))}
           </div>
           <div style={{ textAlign: "left", maxWidth: 420, margin: "0 auto 18px" }}>
@@ -916,7 +966,7 @@ export default function OKHistoryGame() {
                 <div key={a.qid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px",
                   background: "rgba(255,255,255,0.55)", borderRadius: 10, marginBottom: 6, fontSize: 13.5, gap: 6 }}>
                   <span>{meta?.emoji} {q?.place} <span style={{ color: "#b5451f", fontWeight: 700 }}>×{a.multiplier}</span></span>
-                  <span style={{ color: "#7a6548" }}>{Math.round(a.distance)} mi</span>
+                  <span style={{ color: "#7a6548" }}>{a.outsideOK ? "outside OK" : `${Math.round(a.distance)} mi`}</span>
                   <b style={{ color: "#1a3a5c" }}>+{a.score}</b>
                 </div>
               );
@@ -927,10 +977,19 @@ export default function OKHistoryGame() {
             <div><b style={{ display: "block", fontSize: 18, color: "#1a3a5c" }}>{stats.bestScore}</b>Best score</div>
             <div><b style={{ display: "block", fontSize: 18, color: "#1a3a5c" }}>{stats.played}</b>Played</div>
           </div>
-          <button onClick={doShare} style={{ background: "#1a3a5c", color: "#fff", border: "none", borderRadius: 14,
-            padding: "13px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
-            {copied ? "Copied!" : "Share Result"}
-          </button>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={doShare} style={{ background: "#1a3a5c", color: "#fff", border: "none", borderRadius: 14,
+              padding: "13px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+              {copied ? "Copied!" : "Share Results"}
+            </button>
+            <a href={smsHref} style={{ background: "#b5451f", color: "#fff", borderRadius: 14,
+              padding: "13px 22px", fontSize: 15, fontWeight: 800, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              💬 Text a Friend
+            </a>
+          </div>
+          <p style={{ fontSize: 11, color: "#9a8a68", marginTop: 10, maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>
+            &quot;Text a Friend&quot; opens your phone&apos;s Messages app with your score pre-filled.
+          </p>
           <p style={{ fontSize: 12, color: "#9a8a68", marginTop: 16 }}>Come back tomorrow for a new round.</p>
         </div>
       )}
